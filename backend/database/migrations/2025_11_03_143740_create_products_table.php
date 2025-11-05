@@ -9,39 +9,28 @@ return new class extends Migration {
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('category_id')->nullable()
-                  ->constrained('categories')->onDelete('set null');
-            $table->foreignId('supplier_id')->nullable()
-                  ->constrained('suppliers')->onDelete('set null');
-            $table->foreignId('brand_id')->nullable()
-                  ->constrained('brands')->onDelete('set null');
-
-            $table->string('sku', 100)->unique();
+            $table->string('sku', 225)->unique();
             $table->string('name', 255);
-            $table->decimal('price', 10, 2)->default(0);
+            $table->integer('price');
             $table->integer('quantity')->default(0);
-
             $table->longText('content')->nullable();
             $table->text('summary')->nullable();
             $table->string('image')->nullable();
-            $table->json('images')->nullable();
+            $table->text('images')->nullable();
             $table->decimal('average_rating', 2, 1)->default(0.0);
-
             $table->text('description')->nullable();
             $table->string('alias')->nullable();
-            $table->boolean('status')->default(true);
-            $table->unsignedInteger('version')->default(1);
+            $table->tinyInteger('status')->default(value: 0);
+            /** This automatically adds:
+             * version (int, default 1)
+             * created_user_id / updated_user_id (nullable bigint)
+             * created_at / updated_at timestamps
+             * deleted_at for soft deletes
+             */
+            $table->commonFields();
 
-            $table->foreignId('created_user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
-            $table->foreignId('updated_user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
-
-            $table->timestamps();
-            $table->softDeletes();
-
-            $table->index(['category_id', 'brand_id', 'supplier_id', 'status']);
+            $table->index('name');
+            $table->index('sku');
         });
     }
 

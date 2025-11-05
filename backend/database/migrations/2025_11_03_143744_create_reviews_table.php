@@ -8,36 +8,38 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('reviews', function (Blueprint $table) {
+
             $table->id();
 
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
+            $table->integer('product_id')->nullable();
+
+            $table->integer('user_id')->nullable();
 
             $table->tinyInteger('rating')->default(0);      // 1..5
+
             $table->longText('content')->nullable();
-            $table->json('images')->nullable();
+
+            $table->text('images')->nullable();
+
             $table->boolean('is_verified')->default(false);
 
             $table->longText('reply_content')->nullable();
+
             $table->timestamp('reply_at')->nullable();
-            $table->foreignId('reply_user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
 
-            $table->unsignedInteger('like_count')->default(0);
+            $table->integer('reply_user_id')->nullable();
 
-            $table->boolean('status')->default(true);
-            $table->unsignedInteger('version')->default(1);
+            $table->integer('like_count')->default(0);
 
-            $table->foreignId('created_user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
-            $table->foreignId('updated_user_id')->nullable()
-                  ->constrained('users')->onDelete('set null');
+            $table->tinyInteger('status')->default(0);
 
-            $table->timestamps();
-            $table->softDeletes();
-
-            $table->index(['product_id', 'user_id', 'status']);
+            /** This automatically adds:
+             * version (int, default 1)
+             * created_user_id / updated_user_id (nullable bigint)
+             * created_at / updated_at timestamps
+             * deleted_at for soft deletes
+             */
+            $table->commonFields();
         });
     }
 
