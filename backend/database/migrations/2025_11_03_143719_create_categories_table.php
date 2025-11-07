@@ -8,22 +8,17 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('categories', function (Blueprint $table) {
-
+            // categories fields
             $table->id();
-
             $table->string('name', 225);
-
             $table->text('summary')->nullable();
-
-            $table->integer('parent_id')->nullable();
-
             $table->string('image')->nullable();
-
             $table->text('description')->nullable();
-
             $table->string('alias')->nullable();
-
             $table->tinyInteger('status')->default(0);
+
+            // Relationship references
+            $table->integer('parent_id')->nullable();
 
             /** This automatically adds:
              * version (int, default 1)

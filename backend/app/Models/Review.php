@@ -27,25 +27,26 @@ class Review extends Model
         'updated_user_id',
     ];
 
-    protected $casts = [
-        'images' => 'array',
-        'is_verified' => 'boolean',
-        'status' => 'boolean',
-        'rating' => 'integer',
-        'reply_at' => 'datetime',
-    ];
-
     //  Relationships
+    /**
+     * Each review belongs to a product.
+     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
+    /**
+     * Each review is written by a user.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * A review may have a reply from another user (e.g. admin/staff).
+     */
     public function replyUser()
     {
         return $this->belongsTo(User::class, 'reply_user_id');

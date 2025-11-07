@@ -8,6 +8,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
+
+            // products fields
             $table->id();
             $table->string('sku', 225)->unique();
             $table->string('name', 255);
@@ -21,6 +23,12 @@ return new class extends Migration {
             $table->text('description')->nullable();
             $table->string('alias')->nullable();
             $table->tinyInteger('status')->default(value: 0);
+
+             // Relationship references
+            $table->integer('category_id')->nullable();
+            $table->integer('supplier_id')->nullable();
+            $table->integer('brand_id')->nullable();
+
             /** This automatically adds:
              * version (int, default 1)
              * created_user_id / updated_user_id (nullable bigint)

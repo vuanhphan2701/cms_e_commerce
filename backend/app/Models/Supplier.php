@@ -25,11 +25,11 @@ class Supplier extends Model
         'updated_user_id',
     ];
 
-    protected $casts = [
-        'status' => 'boolean',
-    ];
-
     //  Relationships
+    /**
+     * A supplier can have many products.
+     * Relationship key: `supplier_id`
+     */
     public function products()
     {
         return $this->hasMany(Product::class);

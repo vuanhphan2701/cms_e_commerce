@@ -32,21 +32,37 @@ class Product extends Model
     ];
 
     // Relationships
+    /**
+     * Each product belongs to one category.
+     * Relationship key: `category_id`
+     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * Each product belongs to one supplier.
+     * Relationship key: `supplier_id`
+     */
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
     }
 
+    /**
+     * Each product belongs to one brand.
+     * Relationship key: `brand_id`
+     */
     public function brand()
     {
         return $this->belongsTo(Brand::class);
     }
 
+    /**
+     * Each product can have many reviews from users.
+     * Relationship key: `product_id`
+     */
     public function reviews()
     {
         return $this->hasMany(Review::class);

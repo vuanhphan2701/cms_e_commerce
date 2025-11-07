@@ -23,21 +23,31 @@ class Category extends Model
         'updated_user_id',
     ];
 
-    protected $casts = [
-        'status' => 'boolean',
-    ];
 
-    // 🔗 Relationships
+
+    //  Relationships
+    /**
+     * A category may belong to a parent category.
+     * Relationship key: `parent_id`
+     */
     public function parent()
     {
         return $this->belongsTo(Category::class, 'parent_id');
     }
 
+    /**
+     * A category can have many child categories.
+     * Relationship key: `parent_id`
+     */
     public function children()
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
 
+    /**
+     * A category can have many products.
+     * Relationship key: `category_id`
+     */
     public function products()
     {
         return $this->hasMany(Product::class);

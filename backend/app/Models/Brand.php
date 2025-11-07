@@ -22,11 +22,11 @@ class Brand extends Model
         'updated_user_id',
     ];
 
-    protected $casts = [
-        'status' => 'boolean',
-    ];
-
     // Relationships
+    /**
+     * A brand can have many products.
+     * Relationship key: `brand_id`
+     */
     public function products()
     {
         return $this->hasMany(Product::class);

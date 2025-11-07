@@ -6,43 +6,56 @@ use Exception;
 
 class BaseRepository implements BaseRepositoryInterface
 {
+    protected string $model;
 
-    protected $model;
+    /**
+     * @throws Exception
+     */
 
-    public function __construct($model)
+    public function __construct()
     {
         if (!property_exists($this, 'model')) {
-            throw new Exception(static::class . ' must define the model property.');
+            throw new Exception(static::class . ' must define the $model property.');
         }
-        if (!class_exists($model)) {
+
+        if (!class_exists($this->model)) {
             throw new Exception("Model class {$this->model} does not exist.");
         }
     }
 
-    public function all()
+    public function find(int $id): mixed
     {
-        return $this->model->all();
+        return $this->model::find($id);
     }
 
-    public function find(int $id)
+    public function all(): array
     {
-        return $this->model->find($id);
-    }
-    public function create(array $data)
-    {
-        return $this->model->create($data);
-    }
-    public function update(int $id, array $data)
-    {
-        $record = $this->model->findorFail($id);
-        $record->update($data);
-        return $record;
+        return $this->model::all()->toArray();
     }
 
-    public function delete(int $id)
+    public function save(array $attributes): mixed
     {
-        $record = $this->model->findorFail($id);
-        $record->delete();
-        return $record;
+        return $this->model::create($attributes);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function update(int $id, array $attributes): mixed
+    {
+        $model = $this->model::find($id);
+
+        if (!$model) {
+            throw new \Exception("Record not found for ID {$id}");
+        }
+
+        $model->update($attributes);
+
+        return $model;
+    }
+
+    public function delete(int $id): void
+    {
+        $this->model::destroy($id);
     }
 }
