@@ -32,10 +32,18 @@ class ProductController extends Controller
     /**
      * Display a listing of all products.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = $this->productRepository->all();
-        return Response::success($products);
+        $page  = (int) $request->query('page', 1);
+        $limit = (int) $request->query('limit', 10);
+
+        try {
+            $result = $this->productRepository->paginate($page, $limit);
+
+            return Response::success($result);
+        } catch (Exception $e) {
+            return Response::error('Failed to fetch paginated products: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
