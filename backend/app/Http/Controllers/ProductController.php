@@ -34,13 +34,18 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
+        // Get pagination parameters from query string with defaults
         $page  = (int) $request->query('page', 1);
         $limit = (int) $request->query('limit', 10);
+        $sortBy = $request->query('sortBy', 'id');
+        $order = $request->query('order', 'desc');
 
         try {
-            $result = $this->productRepository->paginate($page, $limit);
+            $result = $this->productRepository
+                ->paginate($page, $limit, $sortBy, $order);
 
             return Response::success($result);
+
         } catch (Exception $e) {
             return Response::error('Failed to fetch paginated products: ' . $e->getMessage(), 500);
         }
