@@ -40,12 +40,19 @@ class ProductController extends Controller
         $sortBy = $request->query('sortBy', 'id');
         $order = $request->query('order', 'desc');
 
+        $filters= [
+            'keyword'     => $request->query('keyword', null),
+            'category_id' => $request->query('category_id', null),
+            'brand_id'    => $request->query('brand_id', null),
+            'supplier_id' => $request->query('supplier_id', null),
+            'status'      => $request->query('status', null),
+        ];
         try {
+
             $result = $this->productRepository
-                ->paginate($page, $limit, $sortBy, $order);
+                ->paginate($page, $limit, $sortBy, $order, $filters);
 
             return Response::success($result);
-
         } catch (Exception $e) {
             return Response::error('Failed to fetch paginated products: ' . $e->getMessage(), 500);
         }
