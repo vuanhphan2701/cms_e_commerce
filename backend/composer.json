@@ -24,7 +24,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Core\\": "core/"
+            "Core\\": "core/",
+            "Core\\Traits\\": "core/traits",
+            "Core\\controllers\\": "core/controllers",
+            "Core\\Validators\\": "core/validators"
         }
     },
     "autoload-dev": {

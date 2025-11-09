@@ -43,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
             // Laravel's built-in created_at and updated_at columns
             $this->timestamps();
 
-            // Adds a deleted_at column (used with SoftDeletes trait)
+            // Adds a deleted_at column (used with SoftDeletes traits)
             $this->softDeletes();
         });
     }
