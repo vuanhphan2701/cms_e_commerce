@@ -9,6 +9,9 @@ use App\Repositories\ProductRepository;
 use Core\Response;
 use Illuminate\Support\Facades\Validator;
 use Exception;
+use App\Validators\ProductValidator;
+use Faker\Provider\Base;
+use Core\Controllers\BaseController;
 
 /**
  * Class ProductController
@@ -16,9 +19,19 @@ use Exception;
  * Handles all CRUD operations for products.
  * Uses the ProductRepository for data access.
  */
-class ProductController extends Controller
+class ProductController extends BaseController
 {
+
+    /**
+     * use productRepository
+     * @var ProductRepository
+     */
     protected ProductRepository $productRepository;
+
+    /**
+     * The validator class associated with the controller
+     */
+    protected string $validator = ProductValidator::class;
 
     /**
      * Inject the ProductRepository.
@@ -34,28 +47,27 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        // Get pagination parameters from query string with defaults
-        $page  = (int) $request->query('page', 1);
-        $limit = (int) $request->query('limit', 10);
-        $sortBy = $request->query('sortBy', 'id');
-        $order = $request->query('order', 'desc');
+        $params =  $request->all();
 
-        $filters= [
-            'keyword'     => $request->query('keyword', null),
-            'category_id' => $request->query('category_id', null),
-            'brand_id'    => $request->query('brand_id', null),
-            'supplier_id' => $request->query('supplier_id', null),
-            'status'      => $request->query('status', null),
+        // Normalize pagination/sorting defaults
+        $page   = (int)($params['page'] ?? 1);
+        $limit  = (int)($params['limit'] ?? 10);
+        $sortBy = $params['sortBy'] ?? 'id';
+        $order  = $params['order'] ?? 'desc';
+
+        // Everything else considered as filters
+        $filters = [
+            'keyword'     => $params['keyword']     ?? null,
+            'category_id' => $params['category_id'] ?? null,
+            'brand_id'    => $params['brand_id']    ?? null,
+            'supplier_id' => $params['supplier_id'] ?? null,
+            'status'      => $params['status']      ?? null,
         ];
-        try {
 
-            $result = $this->productRepository
-                ->paginate($page, $limit, $sortBy, $order, $filters);
 
-            return Response::success($result);
-        } catch (Exception $e) {
-            return Response::error('Failed to fetch paginated products: ' . $e->getMessage(), 500);
-        }
+        $result = $this->productRepository->paginate($page, $limit, $sortBy, $order, $filters);
+
+        return Response::success($result);
     }
 
     /**
@@ -64,118 +76,44 @@ class ProductController extends Controller
     public function show(int $id)
     {
         $product = $this->productRepository->find($id);
+        // check note loi
 
-        if (!$product) {
-            return Response::error('Product not found', code: 404);
-        }
-
-        return Response::success($product);
+        return $product
+            ? Response::success($product)
+            : Response::error('Product not found', 404);
     }
 
     /**
      * Create a new product.
      */
-    public function store(Request $request)
+    public function store()
     {
+        // Validate input data
+        $validated = $this->validate('validateCreate');
 
-        try {
-            // Validate input data
-            $validated = $request->validate([
-                'sku'            => 'required|string|max:225|unique:products,sku',
-                'name'           => 'required|string|max:255',
-                'price'          => 'required|integer|min:0',
-                'quantity'       => 'nullable|integer|min:0',
-                'content'        => 'nullable|string',
-                'summary'        => 'nullable|string',
-                'image'          => 'nullable|string|max:255',
-                'images'         => 'nullable|string',
-                'average_rating' => 'nullable|numeric|min:0|',
-                'description'    => 'nullable|string',
-                'alias'          => 'nullable|string|max:255|',
-                'status'         => 'nullable|integer|in:0,1',
-                'category_id'    => 'nullable|integer|',
-                'brand_id'       => 'nullable|integer|',
-                'supplier_id'    => 'nullable|integer|',
-            ]);
+        // dd($validated);
+        $product = $this->productRepository->save($validated);
 
-            $product = $this->productRepository->save($validated);
-
-            return Response::success($product, 'Product created successfully', 201);
-        } catch (ValidationException $e) {
-            // manually handle validation failure
-            return Response::error($e->validator->errors()->first(), 422);
-        }
+        return Response::success($product, 'Product created successfully');
     }
 
     /**
      * Update an existing product.
      */
-    public function update(Request $request, int $id)
-    {
-        // Manually validate to control response format
-        $validator = Validator::make($request->all(), [
-            'sku'            => 'required|string|max:225|unique:products,sku,' . $id,
-            'name'           => 'required|string|max:255',
-            'price'          => 'required|integer|min:0',
-            'quantity'       => 'nullable|integer|min:0',
-            'content'        => 'nullable|string',
-            'summary'        => 'nullable|string',
-            'image'          => 'nullable|string|max:255',
-            'images'         => 'nullable|string',
-            'average_rating' => 'nullable|numeric|min:0',
-            'description'    => 'nullable|string',
-            'alias'          => 'nullable|string|max:255|',
-            'status'         => 'nullable|integer|in:0,1,2,3',
-            'category_id'    => 'nullable|integer',
-            'brand_id'       => 'nullable|integer',
-            'supplier_id'    => 'nullable|integer',
-            'version'        => 'required|integer|min:1',
-        ]);
 
-        // Return validation errors in custom format
-        if ($validator->fails()) {
-            return Response::error($validator->errors()->first(), 422);
-        }
-
-        $validated = $validator->validated();
-
-        try {
-            $product = $this->productRepository->find($id);
-            if (!$product) {
-                return Response::error('Product not found', 404);
-            }
-
-            // Optimistic locking check
-            if ($product->version != $validated['version']) {
-                return Response::error(
-                    'Product has been modified by another user. Please refresh and try again.',
-                    409
-                );
-            }
-
-            // Increment version for next update
-            $validated['version'] = $validated['version'] + 1;
-
-            $updated = $this->productRepository->update($id, $validated);
-
-            return Response::success($updated, 'Product updated successfully');
-        } catch (Exception $e) {
-            return Response::error('Failed to update product: ' . $e->getMessage(), 500);
-        }
-    }
 
     /**
      * Delete a product.
      */
     public function destroy(int $id)
     {
-        try {
-            $this->productRepository->delete($id);
+        $product = $this->productRepository->find(id: $id);
 
-            return Response::success(null, 'Product deleted successfully');
-        } catch (Exception $e) {
-
-            return Response::error('Failed to delete product: ' . $e->getMessage(), 500);
+        if (!$product) {
+            return Response::error('Product not found', 404);
         }
+
+        $this->productRepository->delete($id);
+        return Response::success(null, 'Product deleted successfully');
     }
 }

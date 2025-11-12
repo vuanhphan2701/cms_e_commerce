@@ -25,7 +25,6 @@ class ProductRepository extends BaseRepository
         string $order = 'desc',
         array $filters = []
     ): array {
-
         // list allowed sorting fields
         $allowedSortBy = ['id', 'name', 'price', 'status', 'created_at', 'updated_at'];
 
@@ -75,8 +74,6 @@ class ProductRepository extends BaseRepository
                     'pageSize'  => $paginator->perPage(),
                     'pageCount' => $paginator->lastPage(),
                     'total'     => $paginator->total(),
-                    'sortBy'    => $sortBy,
-                    'order'     => $order
                 ],
             ],
         ];
