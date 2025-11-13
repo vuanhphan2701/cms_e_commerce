@@ -53,7 +53,7 @@ class ProductController extends BaseController
         $page   = (int)($params['page'] ?? 1);
         $limit  = (int)($params['limit'] ?? 10);
         $sortBy = $params['sortBy'] ?? 'id';
-        $order  = $params['order'] ?? 'desc';
+        $order  = $params['order'] ?? 'asc';
 
         // Everything else considered as filters
         $filters = [
@@ -100,6 +100,25 @@ class ProductController extends BaseController
     /**
      * Update an existing product.
      */
+    public function update(int $id, Request $request)
+    {
+        // validate input data
+        $validated = $this->validate('validateUpdate', $id);
+        // find the products
+        $product = $this->productRepository->find($id);
+        if (!$product) {
+            return Response::error('Product not found', 404);
+        }
+        try {
+            $product->fill($validated);
+
+            $product->save();
+
+            return Response::success($product, 'Product updated successfully');
+        } catch (Exception $e) {
+            return Response::error('Conflict detected. Please refresh and try again.', 409);
+        }
+    }
 
 
     /**

@@ -16,7 +16,7 @@ class ProductValidator extends BaseValidator
     {
         return [
             'sku'            => 'required|string|max:225|unique:products,sku',
-            'name'           => 'required|string|max:255',
+            'name'           => 'required|string|max:225',
             'price'          => 'required|integer|min:0',
             'quantity'       => 'nullable|integer|min:0',
             'content'        => 'nullable|string',
@@ -37,10 +37,12 @@ class ProductValidator extends BaseValidator
      * Summary of validateUpdate
      * @param int $id
      */
-    public static function validateUpdate(int $id): array
+    public static function validateUpdate(): array
     {
+        $id = request()->route('id');
+
         return [
-            'sku'            => 'required|string|max:225|unique:products,sku,' . $id,
+            'sku'            => "required|string|max:225|unique:products,sku,{$id}",
             'name'           => 'required|string|max:255',
             'price'          => 'required|integer|min:0',
             'quantity'       => 'nullable|integer|min:0',
@@ -55,6 +57,7 @@ class ProductValidator extends BaseValidator
             'category_id'    => 'nullable|integer|',
             'brand_id'       => 'nullable|integer|',
             'supplier_id'    => 'nullable|integer|',
+            'version'        => 'required|integer|min:1',
         ];
     }
 }
