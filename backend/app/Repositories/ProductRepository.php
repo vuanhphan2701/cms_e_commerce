@@ -18,13 +18,8 @@ class ProductRepository extends BaseRepository
      * @param array $filters
      * @return array{data: mixed, meta: array}
      */
-    public function paginate(
-        int $page = 1,
-        int $limit = 10,
-        string $sortBy = 'id',
-        string $order = 'desc',
-        array $filters = []
-    ): array {
+    public function paginate(int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'desc', array $filters = []): array
+    {
         // list allowed sorting fields
         $allowedSortBy = ['id', 'name', 'price', 'status', 'created_at', 'updated_at'];
 

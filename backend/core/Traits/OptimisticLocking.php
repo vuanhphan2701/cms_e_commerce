@@ -2,7 +2,7 @@
 
 namespace Core\Traits;
 
-use Exception;
+use Core\Exceptions\OptimisticLockException;
 
 /**
  * Trait OptimisticLocking
@@ -16,12 +16,14 @@ trait OptimisticLocking
 
     public static function bootOptimisticLocking()
     {
+
         static::updating(function ($model) {
 
             $clientVersion = request()->input('version');
 
             if (!$clientVersion) {
-                throw new Exception("Version not provided in request for optimistic locking.");
+                // throw exception in OptimisticLockException if version not provided
+                throw new OptimisticLockException("Version not provided in request for optimistic locking.");
             }
 
             $updated = $model->newQuery()
@@ -33,7 +35,8 @@ trait OptimisticLocking
                 ));
 
             if ($updated === 0) {
-                throw new Exception("Optimistic lock conflict on " . static::class);
+                // throw exception in OptimisticLockException if version not provided
+                throw new OptimisticLockException("Optimistic lock conflict on " . static::class);
             }
 
             return false;

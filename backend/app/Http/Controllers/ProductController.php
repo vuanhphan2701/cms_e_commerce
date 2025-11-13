@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Validation\ValidationException;
-
+use Core\Exceptions\OptimisticLockException;
 use Illuminate\Http\Request;
 use App\Repositories\ProductRepository;
 use Core\Response;
-use Illuminate\Support\Facades\Validator;
-use Exception;
 use App\Validators\ProductValidator;
-use Faker\Provider\Base;
 use Core\Controllers\BaseController;
 
 /**
@@ -65,7 +61,13 @@ class ProductController extends BaseController
         ];
 
 
-        $result = $this->productRepository->paginate($page, $limit, $sortBy, $order, $filters);
+        $result = $this->productRepository->paginate(
+            $page,
+            $limit,
+            $sortBy,
+            $order,
+            $filters
+        );
 
         return Response::success($result);
     }
@@ -76,7 +78,6 @@ class ProductController extends BaseController
     public function show(int $id)
     {
         $product = $this->productRepository->find($id);
-        // check note loi
 
         return $product
             ? Response::success($product)
@@ -102,20 +103,27 @@ class ProductController extends BaseController
      */
     public function update(int $id, Request $request)
     {
-        // validate input data
-        $validated = $this->validate('validateUpdate', $id);
         // find the products
         $product = $this->productRepository->find($id);
         if (!$product) {
             return Response::error('Product not found', 404);
         }
+
+        // validate input data
+        $validated = $this->validate('validateUpdate', $id);
+
         try {
+            // update the product
             $product->fill($validated);
 
             $product->save();
 
             return Response::success($product, 'Product updated successfully');
-        } catch (Exception $e) {
+
+        }
+        // catch OptimisticLockException
+        catch (OptimisticLockException $e) {
+
             return Response::error('Conflict detected. Please refresh and try again.', 409);
         }
     }
