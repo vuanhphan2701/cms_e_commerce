@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Core\Exceptions\OptimisticLockException;
+use Core\Exceptions\BussinessException;
 use Illuminate\Http\Request;
 use App\Repositories\ProductRepository;
 use Core\Response;
@@ -122,7 +122,7 @@ class ProductController extends BaseController
 
         }
         // catch OptimisticLockException
-        catch (OptimisticLockException $e) {
+        catch (BussinessException $e) {
 
             return Response::error('Conflict detected. Please refresh and try again.', 409);
         }

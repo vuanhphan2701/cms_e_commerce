@@ -1,6 +1,7 @@
 <?php
-namespace Core\Exception;
-class BussinessException extends \Exception
+namespace Core\Exceptions;
+use Exception;
+class BussinessException extends Exception
 {
 
 }

@@ -1,8 +1,8 @@
 <?php
 
 namespace Core\Traits;
+use Core\Exceptions\BussinessException;
 
-use Core\Exceptions\OptimisticLockException;
 
 /**
  * Trait OptimisticLocking
@@ -23,7 +23,7 @@ trait OptimisticLocking
 
             if (!$clientVersion) {
                 // throw exception in OptimisticLockException if version not provided
-                throw new OptimisticLockException("Version not provided in request for optimistic locking.");
+                throw new BussinessException("Version not provided in request for optimistic locking.");
             }
 
             $updated = $model->newQuery()
@@ -36,7 +36,7 @@ trait OptimisticLocking
 
             if ($updated === 0) {
                 // throw exception in OptimisticLockException if version not provided
-                throw new OptimisticLockException("Optimistic lock conflict on " . static::class);
+                throw new BussinessException("Optimistic lock conflict on " . static::class);
             }
 
             return false;
