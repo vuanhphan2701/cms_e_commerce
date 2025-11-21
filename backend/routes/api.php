@@ -4,6 +4,10 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\ReviewController;
+
+use function Symfony\Component\String\s;
+
 /**
  * Product API Routes
  */
@@ -42,5 +46,10 @@ Route::put('/supplier/{id}', [SupplierController::class, 'update']);
 Route::delete('/supplier/{id}', [SupplierController::class, 'destroy']);
 
 /**
- * Additional API Routes can be added here
+ * Review API Routes
  */
+Route::get('/review', [ReviewController::class, 'index']);
+Route::get('/review/{id}', [ReviewController::class, 'show']);
+Route::post('/review', [ReviewController::class, 'store']);
+Route::put('/review/{id}', [ReviewController::class, 'update']);
+Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
