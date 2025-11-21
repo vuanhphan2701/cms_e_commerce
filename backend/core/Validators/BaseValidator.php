@@ -14,16 +14,16 @@ class BaseValidator
      * @throws \Exception
      * @return array
      */
-    public static function validateMethod(string $method)
+    public static function validateMethod(string $method, $id)
     {
 
         // Check if the specified method exists in the class
         if (!method_exists(static::class, $method)) {
-            throw new \Exception("Validation method {$method} does not exist in " . static::class);
+            throw new \Exception(message: "Validation method {$method} does not exist in " . static::class);
         }
 
         // Get the validation rules from the specified method
-        $rule = static::{$method}();
+        $rule = static::{$method}($id);
 
         $data = request()->all();
 

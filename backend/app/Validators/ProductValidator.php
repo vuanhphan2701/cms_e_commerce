@@ -37,9 +37,8 @@ class ProductValidator extends BaseValidator
      * Summary of validateUpdate
      * @param int $id
      */
-    public static function validateUpdate(): array
+    public static function validateUpdate($id): array
     {
-        $id = request()->route('id');
 
         return [
             'sku'            => "required|string|max:225|unique:products,sku,{$id}",
