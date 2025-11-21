@@ -3,6 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\SupplierController;
 /**
  * Product API Routes
  */
@@ -30,3 +31,16 @@ Route::get('/brand/{id}', [BrandController::class, 'show']);
 Route::post('/brand', [BrandController::class, 'store']);
 Route::put('/brand/{id}', [BrandController::class, 'update']);
 Route::delete('/brand/{id}', [BrandController::class, 'destroy']);
+
+/**
+ * Supplier API Routes
+ */
+Route::get('/supplier', [SupplierController::class, 'index']);
+Route::get('/supplier/{id}', [SupplierController::class, 'show']);
+Route::post('/supplier', [SupplierController::class, 'store']);
+Route::put('/supplier/{id}', [SupplierController::class, 'update']);
+Route::delete('/supplier/{id}', [SupplierController::class, 'destroy']);
+
+/**
+ * Additional API Routes can be added here
+ */
