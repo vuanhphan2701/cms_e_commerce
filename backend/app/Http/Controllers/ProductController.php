@@ -59,14 +59,18 @@ class ProductController extends BaseController
             'supplier_id' => $params['supplier_id'] ?? null,
             'status'      => $params['status']      ?? null,
         ];
-
+        $include = [];
+        if ($request->has('include')) {
+            $include = explode(',', $request->include);
+        }
 
         $result = $this->productRepository->paginate(
             $page,
             $limit,
             $sortBy,
             $order,
-            $filters
+            $filters,
+            $include
         );
 
         return Response::success($result);
@@ -119,7 +123,6 @@ class ProductController extends BaseController
             $product->save();
 
             return Response::success($product, 'Product updated successfully');
-
         }
         // catch OptimisticLockException
         catch (BussinessException $e) {

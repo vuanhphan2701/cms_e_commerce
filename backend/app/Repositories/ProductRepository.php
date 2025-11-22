@@ -18,8 +18,14 @@ class ProductRepository extends BaseRepository
      * @param array $filters
      * @return array{data: mixed, meta: array}
      */
-    public function paginate(int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'desc', array $filters = []): array
-    {
+    public function paginate(
+        int $page = 1,
+        int $limit = 10,
+        string $sortBy = 'id',
+        string $order = 'desc',
+        array $filters = [],
+        array $include = []
+    ): array {
         // list allowed sorting fields
         $allowedSortBy = ['id', 'name', 'price', 'status', 'created_at', 'updated_at'];
 
@@ -33,6 +39,9 @@ class ProductRepository extends BaseRepository
         // Build base query
         $query = $this->model::query();
 
+        if (!empty($include)) {
+            $query->with($include);
+        }
         // Keyword search (name, sku, alias)
         if (!empty($filters['keyword'])) {
             $keyword = trim($filters['keyword']);
