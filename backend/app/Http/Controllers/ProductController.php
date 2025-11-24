@@ -81,7 +81,13 @@ class ProductController extends BaseController
      */
     public function show(int $id)
     {
-        $product = $this->productRepository->find($id);
+        $include = [];
+
+        if (request()->has('include')) {
+            $include = explode(',', request()->include);
+        }
+
+        $product = $this->productRepository->find($id, $include);
 
         return $product
             ? Response::success($product)

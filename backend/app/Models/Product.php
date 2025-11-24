@@ -33,6 +33,8 @@ class Product extends Model
         'updated_user_id',
     ];
 
+
+
     // Relationships
     /**
      * Each product belongs to one category.

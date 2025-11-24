@@ -37,11 +37,29 @@ class ProductRepository extends BaseRepository
         $order = strtolower($order) === 'asc' ? 'asc' : 'desc';
 
         // Build base query
-        $query = $this->model::query();
+        $query = $this->model::query()->select('products.*');
 
+        //dd($include);
         if (!empty($include)) {
-            $query->with($include);
+
+            // fetch category, brand, supplier names
+
+            if (in_array('categories', $include)) {
+                $query->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+                    ->addSelect('categories.name as category_name');
+            };
+
+            if (in_array('brands', $include)) {
+                $query->leftJoin('brands', 'brands.id', '=', 'products.brand_id')
+                    ->addSelect('brands.name as brand_name');
+            }
+
+            if (in_array('suppliers', $include)) {
+                $query->leftJoin('suppliers', 'suppliers.id', '=', 'products.supplier_id')
+                    ->addSelect('suppliers.name as supplier_name');
+            }
         }
+
         // Keyword search (name, sku, alias)
         if (!empty($filters['keyword'])) {
             $keyword = trim($filters['keyword']);
@@ -81,5 +99,12 @@ class ProductRepository extends BaseRepository
                 ],
             ],
         ];
+    }
+    public function find(int $id, array $include = []): mixed
+    {
+        if (!empty($include)) {
+            $query = $this->model::query()->with($include);
+         }
+        return $query->find($id);
     }
 }

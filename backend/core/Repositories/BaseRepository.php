@@ -23,7 +23,7 @@ class BaseRepository implements BaseRepositoryInterface
         }
     }
 
-    public function find(int $id): mixed
+    public function find(int $id, array $include = []): mixed
     {
         return $this->model::find($id);
     }
