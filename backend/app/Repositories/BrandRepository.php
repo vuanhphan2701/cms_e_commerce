@@ -9,9 +9,15 @@ class BrandRepository extends BaseRepository
 {
     protected string $model = Brand::class;
 
-    public function paginate(int $page, int $limit, string $sortBy, string $order, array $filters)
+    public function paginate(int $page, int $limit, string $sortBy, string $order, array $filters, array $include = []): array
     {
-        $query = $this->model::query();
+        $query = $this->model::query()->select('brands.*');
+
+        // fetch products of brands
+        if(!empty($include)){
+            $query->with($include);
+        }
+         // Allowed sorting fields
 
         if (!empty($filters['keyword'])) {
             $keyword = trim($filters['keyword']);
@@ -40,5 +46,17 @@ class BrandRepository extends BaseRepository
                 ],
             ],
         ];
+    }
+
+    public function find($id, array $include = []): mixed
+    {
+        $query = $this->model::query();
+
+        // fetch product of brands
+        if(!empty($include)){
+            $query->with($include);
+        }
+
+        return $query->find($id);
     }
 }

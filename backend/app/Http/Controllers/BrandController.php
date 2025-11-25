@@ -7,6 +7,7 @@ use Core\Response;
 use App\Repositories\BrandRepository;
 use App\Validators\BrandValidator;
 use Core\Exceptions\BussinessException;
+use Illuminate\Http\Request;
 
 class BrandController extends BaseController
 {
@@ -19,7 +20,7 @@ class BrandController extends BaseController
         $this->brandRepository = resolve(BrandRepository::class);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $params = request()->all();
 
@@ -33,14 +34,24 @@ class BrandController extends BaseController
             'status'  => $params['status'] ?? null,
         ];
 
-        $result = $this->brandRepository->paginate($page, $limit, $sortBy, $order, $filters);
+        // fetch products of brands
+        $include = [];
+        if ($request->has('include')) {
+            $include = explode(',', $request->query('include'));
+        }
+        $result = $this->brandRepository->paginate($page, $limit, $sortBy, $order, $filters, $include);
 
         return Response::success($result);
     }
 
     public function show(int $id)
     {
-        $brand = $this->brandRepository->find($id);
+        // fetch product of brands
+        $include = [];
+        if (request()->has('include')) {
+            $include = explode(',', request()->include);
+        }
+        $brand = $this->brandRepository->find($id, $include);
 
         return $brand
             ? Response::success($brand)
