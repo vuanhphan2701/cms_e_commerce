@@ -12,15 +12,8 @@ class CategoryRepository extends BaseRepository
     /**
      * Paginate + filter + search
      */
-    public function paginate(
-        int $page = 1,
-        int $limit = 10,
-        string $sortBy = 'id',
-        string $order = 'desc',
-        array $filters = [],
-        array $include = []
-    ): array {
-
+    public function paginate(int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'desc', array $filters = [], array $include = []): array
+    {
         // Allowed sorting fields
         $allowedSortBy = ['id', 'name', 'status', 'created_at', 'updated_at'];
 
@@ -82,5 +75,15 @@ class CategoryRepository extends BaseRepository
                 ]
             ]
         ];
+    }
+
+    public function find(int $id, array $include =[] ): mixed
+    {
+      //  dd($include);
+      $query=  $this->model::query();
+        if(!empty($include)){
+           $query->with($include);
+        }
+        return $query->find($id);
     }
 }

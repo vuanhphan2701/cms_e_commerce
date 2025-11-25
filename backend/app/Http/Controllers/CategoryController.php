@@ -48,7 +48,12 @@ class CategoryController extends BaseController
 
     public function show(int $id)
     {
-        $category = $this->categoryRepository->find($id);
+        $include=[];
+        if(request()->has('include')){
+            $include= explode(',', request()->include);
+        }
+
+        $category = $this->categoryRepository->find($id, $include);
 
         return $category
             ? Response::success($category)

@@ -96,8 +96,9 @@ class ProductRepository extends BaseRepository
     // override base find to support includes
     public function find(int $id, array $include = []): mixed
     {
+        $query = $this->model::query();
         if (!empty($include)) {
-            $query = $this->model::query()->with($include);
+            $query->with($include);
         }
         return $query->find($id);
     }
