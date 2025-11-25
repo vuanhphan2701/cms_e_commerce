@@ -7,6 +7,7 @@ use App\Validators\SupplierValidator;
 use Core\Controllers\BaseController;
 use Core\Exceptions\BussinessException;
 use Core\Response;
+use Illuminate\Http\Request;
 
 class SupplierController extends BaseController
 {
@@ -19,7 +20,7 @@ class SupplierController extends BaseController
         $this->supplierRepository = resolve(SupplierRepository::class);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $params = request()->all();
 
@@ -33,15 +34,29 @@ class SupplierController extends BaseController
             'status'  => $params['status'] ?? null,
         ];
 
+        $include = [];
+
+        // fetch related entities if specified
+        if ($request->has('include')) {
+            $include = explode(',', $request->include);
+        }
+
         $result = $this->supplierRepository
-            ->paginate($page, $limit, $sortBy, $order, $filters);
+            ->paginate($page, $limit, $sortBy, $order, $filters, $include);
 
         return Response::success($result);
     }
 
     public function show(int $id)
     {
-        $supplier = $this->supplierRepository->find($id);
+        $include = [];
+
+        // fetch related entities if specified
+        if (request()->has('include')) {
+            $include = explode(',', request()->include);
+        }
+
+        $supplier = $this->supplierRepository->find($id, $include);
 
         return $supplier
             ? Response::success($supplier)
