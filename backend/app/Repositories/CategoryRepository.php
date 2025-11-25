@@ -26,7 +26,7 @@ class CategoryRepository extends BaseRepository
         // Base query
         $query = $this->model::query()->select('categories.*');
 
-        // fetch related entities
+        // fetch parent category
         if (!empty($include)) {
             if (in_array('parent', $include)) {
                 $query->leftJoin('categories as parent_categories', 'parent_categories.id', '=', 'categories.parent_id')
@@ -34,13 +34,15 @@ class CategoryRepository extends BaseRepository
                     ->addSelect('parent_categories.name as parent_name');
             }
 
+            // fetch children categories
             if (in_array('children', $include)) {
                 $query->with('children');
             }
 
-             if (in_array('products', $include)) {
-        $query->with('products');
-    }
+            // fetch products of the category
+            if (in_array('products', $include)) {
+                $query->with('products');
+            }
         }
 
         // Keyword search in: name, summary, alias

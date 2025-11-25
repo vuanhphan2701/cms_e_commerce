@@ -9,13 +9,8 @@ class ReviewRepository extends BaseRepository
 {
     protected string $model = Review::class;
 
-    public function paginate(
-        int $page = 1,
-        int $limit = 10,
-        string $sortBy = 'id',
-        string $order = 'desc',
-        array $filters = []
-    ): array {
+    public function paginate(int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'desc', array $filters = []): array
+    {
 
         $allowedSortBy = ['id', 'rating', 'status', 'created_at'];
 
@@ -64,4 +59,3 @@ class ReviewRepository extends BaseRepository
         ];
     }
 }
-

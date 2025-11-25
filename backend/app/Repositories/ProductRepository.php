@@ -50,7 +50,12 @@ class ProductRepository extends BaseRepository
                 $query->leftJoin('suppliers', 'suppliers.id', '=', 'products.supplier_id')
                     ->addSelect('suppliers.name as supplier_name');
             }
+
+            //fetch reviews of product
+            if (in_array('reviews', $include)) {
+                $query->with('reviews');
         }
+    }
 
         // Keyword search (name, sku, alias)
         if (!empty($filters['keyword'])) {

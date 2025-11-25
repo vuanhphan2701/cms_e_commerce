@@ -17,6 +17,7 @@ class BrandRepository extends BaseRepository
         if(!empty($include)){
             $query->with($include);
         }
+
          // Allowed sorting fields
 
         if (!empty($filters['keyword'])) {
