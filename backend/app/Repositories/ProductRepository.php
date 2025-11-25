@@ -18,14 +18,8 @@ class ProductRepository extends BaseRepository
      * @param array $filters
      * @return array{data: mixed, meta: array}
      */
-    public function paginate(
-        int $page = 1,
-        int $limit = 10,
-        string $sortBy = 'id',
-        string $order = 'desc',
-        array $filters = [],
-        array $include = []
-    ): array {
+    public function paginate(int $page = 1, int $limit = 10, string $sortBy = 'id', string $order = 'desc', array $filters = [], array $include = []): array
+    {
         // list allowed sorting fields
         $allowedSortBy = ['id', 'name', 'price', 'status', 'created_at', 'updated_at'];
 
@@ -39,21 +33,19 @@ class ProductRepository extends BaseRepository
         // Build base query
         $query = $this->model::query()->select('products.*');
 
-        //dd($include);
         if (!empty($include)) {
 
-            // fetch category, brand, supplier names
-
+            // fetch category of product
             if (in_array('categories', $include)) {
                 $query->leftJoin('categories', 'categories.id', '=', 'products.category_id')
                     ->addSelect('categories.name as category_name');
             };
-
+            // fetch brand of product
             if (in_array('brands', $include)) {
                 $query->leftJoin('brands', 'brands.id', '=', 'products.brand_id')
                     ->addSelect('brands.name as brand_name');
             }
-
+            // fetch supplier of product
             if (in_array('suppliers', $include)) {
                 $query->leftJoin('suppliers', 'suppliers.id', '=', 'products.supplier_id')
                     ->addSelect('suppliers.name as supplier_name');
@@ -100,11 +92,13 @@ class ProductRepository extends BaseRepository
             ],
         ];
     }
+
+    // override base find to support includes
     public function find(int $id, array $include = []): mixed
     {
         if (!empty($include)) {
             $query = $this->model::query()->with($include);
-         }
+        }
         return $query->find($id);
     }
 }

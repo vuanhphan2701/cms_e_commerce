@@ -59,6 +59,8 @@ class ProductController extends BaseController
             'supplier_id' => $params['supplier_id'] ?? null,
             'status'      => $params['status']      ?? null,
         ];
+
+        // Include related entities if specified
         $include = [];
         if ($request->has('include')) {
             $include = explode(',', $request->include);

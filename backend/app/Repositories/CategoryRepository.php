@@ -17,7 +17,8 @@ class CategoryRepository extends BaseRepository
         int $limit = 10,
         string $sortBy = 'id',
         string $order = 'desc',
-        array $filters = []
+        array $filters = [],
+        array $include = []
     ): array {
 
         // Allowed sorting fields
@@ -30,7 +31,16 @@ class CategoryRepository extends BaseRepository
         $order = strtolower($order) === 'asc' ? 'asc' : 'desc';
 
         // Base query
-        $query = $this->model::query();
+        $query = $this->model::query()->select('categories.*');
+
+        // fetch related entities
+        if (!empty($include)) {
+            if (in_array('parent', $include)) {
+                $query->leftJoin('categories as parent_categories', 'parent_categories.id', '=', 'categories.parent_id')
+                    ->addSelect('parent_categories.id as parent_id')
+                    ->addSelect('parent_categories.name as parent_name');
+            }
+        }
 
         // Keyword search in: name, summary, alias
         if (!empty($filters['keyword'])) {
@@ -38,8 +48,8 @@ class CategoryRepository extends BaseRepository
 
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('alias', 'like', "%{$keyword}%")
-                  ->orWhere('summary', 'like', "%{$keyword}%");
+                    ->orWhere('alias', 'like', "%{$keyword}%")
+                    ->orWhere('summary', 'like', "%{$keyword}%");
             });
         }
 

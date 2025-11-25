@@ -27,15 +27,20 @@ class CategoryController extends BaseController
         $page   = (int)($params['page'] ?? 1);
         $limit  = (int)($params['limit'] ?? 10);
         $sortBy = $params['sortBy'] ?? 'id';
-        $order  = $params['order'] ?? 'desc';
+        $order  = $params['order'] ?? 'asc';
 
         $filters = [
             'keyword' => $params['keyword'] ?? null,
             'status'  => $params['status'] ?? null,
         ];
 
+        // include related entities
+        $include = [];
+        if($request->has('include')){
+            $include = explode(',', $request->query('include'));
+        }
         $result = $this->categoryRepository->paginate(
-            $page, $limit, $sortBy, $order, $filters
+            $page, $limit, $sortBy, $order, $filters, $include
         );
 
         return Response::success($result);
