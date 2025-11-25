@@ -33,6 +33,14 @@ class CategoryRepository extends BaseRepository
                     ->addSelect('parent_categories.id as parent_id')
                     ->addSelect('parent_categories.name as parent_name');
             }
+
+            if (in_array('children', $include)) {
+                $query->with('children');
+            }
+
+             if (in_array('products', $include)) {
+        $query->with('products');
+    }
         }
 
         // Keyword search in: name, summary, alias
@@ -77,12 +85,12 @@ class CategoryRepository extends BaseRepository
         ];
     }
 
-    public function find(int $id, array $include =[] ): mixed
+    public function find(int $id, array $include = []): mixed
     {
-      //  dd($include);
-      $query=  $this->model::query();
-        if(!empty($include)){
-           $query->with($include);
+        //  dd($include);
+        $query =  $this->model::query();
+        if (!empty($include)) {
+            $query->with($include);
         }
         return $query->find($id);
     }
