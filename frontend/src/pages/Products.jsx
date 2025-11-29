@@ -1,5 +1,6 @@
 // pages/Products.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProducts } from "../hooks/useProducts";
 import { deleteProduct } from "../api/productApi";
 import { updateProduct } from "../api/productApi";
@@ -7,6 +8,7 @@ import Layout from "../components/layout/Layout";
 import ProductTable from "../components/products/ProductTable";
 
 const Products = () => {
+  const nagative = useNavigate();
   // state để refresh lại trang sau khi xóa hoặc cập nhật
   const [refresh, setRefresh] = useState(0);
 
@@ -36,7 +38,7 @@ const Products = () => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return;
 
     await deleteProduct(id);
-    
+
     // delete item khỏi danh sách hiện tại 
     setProducts(prev => prev.filter(products => products.id !== id));
 
@@ -61,38 +63,54 @@ const Products = () => {
 
   return (
     <Layout>
-      {/* Bộ lọc */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex items-center gap-4">
-        <div>
-          <label className="text-sm text-gray-600">Số lượng / trang</label>
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(Number(e.target.value));
-              setPage(1);
-            }}
-            className="border px-2 py-1 rounded ml-2"
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-          </select>
+      {/* Bộ lọc + Tạo sản phẩm */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6 flex items-center justify-between">
+
+        {/* LEFT: Bộ lọc */}
+        <div className="flex items-center gap-6">
+
+          {/* Limit */}
+          <div>
+            <label className="text-sm text-gray-600">Số lượng / trang</label>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label className="text-sm text-gray-600">Sắp xếp theo</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="id">ID</option>
+              <option value="price">Giá</option>
+              <option value="name">Tên</option>
+              <option value="quantity">Tồn kho</option>
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label className="text-sm text-gray-600">Sắp xếp theo</label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="border px-2 py-1 rounded ml-2"
-          >
-            <option value="id">ID</option>
-            <option value="price">Giá</option>
-            <option value="name">Tên</option>
-            <option value="quantity">Tồn kho</option>
-          </select>
-        </div>
+        {/* RIGHT: Nút tạo */}
+        <button
+          onClick={() => nagative("/product/create")}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 transition"
+        >
+          + Tạo sản phẩm
+        </button>
       </div>
+
 
       {/* Bảng sản phẩm */}
       <div className="bg-white p-6 rounded-lg shadow-xl">
@@ -103,11 +121,14 @@ const Products = () => {
                 <th>ID</th>
                 <th>SKU</th>
                 <th>Tên Sản Phẩm</th>
-                <th>Giá</th>
-                <th>Tồn Kho</th>
                 <th>Thương Hiệu</th>
                 <th>Nhà Cung Cấp</th>
+                                <th>Giá</th>
+
+                <th>Tồn Kho</th>
+
                 <th>Trạng Thái</th>
+
                 <th>Reviews</th>
                 <th>Hành Động</th>
               </tr>

@@ -6,8 +6,8 @@ import { HomeIcon, CubeIcon, Cog6ToothIcon, ArrowLeftOnRectangleIcon, PlusCircle
 const Sidebar = () => {
   const navItems = [
     { name: 'Tổng quan', icon: HomeIcon, path: '/' },
-    { name: 'Sản phẩm', icon: CubeIcon, path: '/products' },
-    { name: 'Tạo', icon: PlusCircleIcon, path: '/products/new/' },
+    { name: 'Sản phẩm', icon: CubeIcon, path: '/product' },
+    { name: 'Tạo', icon: PlusCircleIcon, path: '/product/create/' },
     { name: 'Cài đặt', icon: Cog6ToothIcon, path: '/settings' },
   ];
 

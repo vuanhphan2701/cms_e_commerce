@@ -13,17 +13,19 @@ const ProductTable = ({ product, onDelete, onShowReviews, onEdit }) => {
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 {product.name}
             </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold">
-                {product.price}đ
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {product.quantity}
-            </td>
+
+
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 {product.brand_name}
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 {product.supplier_name}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold">
+                {product.price}đ
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                {product.quantity}
             </td>
             <td className="px-6 py-4 whitespace-nowrap">
                 <span
@@ -36,6 +38,7 @@ const ProductTable = ({ product, onDelete, onShowReviews, onEdit }) => {
                     {product.status}
                 </span>
             </td>
+
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                 <button
                     onClick={onShowReviews}

@@ -6,7 +6,6 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ReviewController;
 
-use function Symfony\Component\String\s;
 
 /**
  * Product API Routes
