@@ -32,20 +32,24 @@ const ProductForm = ({ onSubmit, brands, categories, suppliers, product = {} }) 
     }
   }, [product]);
 
+  // Handle input changes
   const handleChange = (e) => {
     let value = e.target.value;
     const numericFields = ["price", "quantity", "brand_id", "category_id", "supplier_id", "status"];
 
+    // Convert to number if the field is numeric
     if (numericFields.includes(e.target.name)) {
       value = Number(value);
     }
 
+    // Update form data state
     setFormData({
       ...formData,
       [e.target.name]: value,
     });
   };
 
+  // Handle form submission
   const submitForm = (e) => {
     e.preventDefault();
     onSubmit(formData);

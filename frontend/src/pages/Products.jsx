@@ -6,9 +6,16 @@ import { deleteProduct } from "../api/productApi";
 import { updateProduct } from "../api/productApi";
 import Layout from "../components/layout/Layout";
 import ProductTable from "../components/products/ProductTable";
+import { useAlert } from "../components/common/AlertContext";
+
 
 const Products = () => {
+  // alert context
+  const { showAlert } = useAlert();
+
+  // điều hướng
   const nagative = useNavigate();
+
   // state để refresh lại trang sau khi xóa hoặc cập nhật
   const [refresh, setRefresh] = useState(0);
 
@@ -24,6 +31,7 @@ const Products = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState("id");
+  const [order, setOrder] = useState("desc");
   const [include, setInclude] = useState("brands,reviews,suppliers");
 
   const { products, setProducts, meta, loading } = useProducts({
@@ -31,21 +39,30 @@ const Products = () => {
     limit,
     sortBy,
     include,
+    order,
     refresh
   });
 
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return;
 
-    await deleteProduct(id);
+    try {
+      await deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
 
-    // delete item khỏi danh sách hiện tại 
-    setProducts(prev => prev.filter(products => products.id !== id));
+      // Nếu xóa sản phẩm cuối cùng trên trang, quay về trang trước
+      if (products.length === 1 && page > 1) {
+        setPage(page - 1);
+      }
 
-    // Nếu xóa sản phẩm cuối cùng trên trang, quay về trang trước
-    if (products.length === 1 && page > 1) {
-      setPage(page - 1);
+      showAlert("Xóa sản phẩm thành công!", "success");  // ✅ dùng alert mới
     }
+    catch (err) {
+      showAlert("Xóa sản phẩm thất bại!", "error");
+    }
+
+
+
 
     // Reload bằng cách set lại page
     //setPage(1);
@@ -100,6 +117,18 @@ const Products = () => {
               <option value="quantity">Tồn kho</option>
             </select>
           </div>
+          <div >
+            <label className="text-sm text-gray-600">Order</label>
+            <select
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="desc">Newest</option>
+              <option value="asc">Oldest</option>
+            </select>
+          </div>
+
         </div>
 
         {/* RIGHT: Nút tạo */}
@@ -123,7 +152,7 @@ const Products = () => {
                 <th>Tên Sản Phẩm</th>
                 <th>Thương Hiệu</th>
                 <th>Nhà Cung Cấp</th>
-                                <th>Giá</th>
+                <th>Giá</th>
 
                 <th>Tồn Kho</th>
 
@@ -383,13 +412,16 @@ const Products = () => {
                   setRefresh(prev => prev + 1);
                   setShowEditModal(false);
                   setPage(1);
+
+                  showAlert("Cập nhật sản phẩm thành công!", "success");   // 🔥 ALERT
+
                 } catch (err) {
-                  console.error(err);
                   if (err.message === "CONFLICT") {
-                    alert("❗ Xung đột dữ liệu: Sản phẩm đã được sửa bởi người khác.\nVui lòng tải lại dữ liệu.");
+                    showAlert("❗ Xung đột dữ liệu: sản phẩm đã bị người khác sửa.", "error");
                     return;
                   }
-                  alert("Lỗi khi cập nhật sản phẩm!");
+
+                  showAlert("Cập nhật thất bại!", "error");              // 🔥 ALERT
                 }
               }}
               className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"

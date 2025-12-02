@@ -1,13 +1,13 @@
 import axios from "./axios";
 
-export async function getAllProducts({ page = 1, limit = 10, sortBy = "id", include = "" }) {
-  const res = await axios.get('http://localhost:8000/api/product', { params: { page, limit, sortBy, include } });
+export async function getAllProducts({ page = 1, limit = 10, sortBy = "id", order = "desc", include = "" }) {
+  const res = await axios.get('http://localhost:8000/api/product', { params: { page, limit, sortBy, order, include } });
   // Trả array + meta
   return {
     items: res.data.data.data,
     meta: res.data.data.meta,
   };
-}
+} 
 
 export const getProductById = async (id) => {
   const res = await axios.get(`/product/${id}`);

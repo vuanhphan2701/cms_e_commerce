@@ -20,7 +20,6 @@ const ProductCreate = () => {
     getSuppliers().then(res => setSuppliers(res.data));
 
   }, []);
-  console.log({ brands, categories, suppliers });
 
   const handleCreate = async (data) => {
     try {
@@ -28,8 +27,25 @@ const ProductCreate = () => {
       alert("Tạo sản phẩm thành công!");
       navigate("/product");
     } catch (err) {
-      console.error(err);
-      alert("Lỗi khi tạo sản phẩm!");
+      
+    // Nếu Laravel trả 422 lỗi validate
+    if (err.response && err.response.status === 422) {
+
+      const errorBag = err.response.data.errors;
+
+      let messages = "";
+
+      for (let field in errorBag) {
+        messages += `• ${errorBag[field][0]}\n`;
+      }
+
+      alert("❌ Lỗi nhập liệu:\n" + messages);
+      return;
+    }
+
+    // Nếu lỗi khác (500, network…)
+    console.error(err);
+    alert("Lỗi khi tạo sản phẩm!");
     }
   };
 
