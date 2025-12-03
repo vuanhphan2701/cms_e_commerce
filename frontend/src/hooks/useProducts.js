@@ -15,7 +15,7 @@ export function useProducts(options) {
         setMeta(res.meta.pagination);
       })
       .finally(() => setLoading(false));
-  }, [options.page, options.limit, options.sortBy, options.order, options.include, options.refresh]);
+  }, [options.page, options.limit, options.sortBy, options.order, options.include]);
 
   return { products, setProducts, meta, loading };
 }

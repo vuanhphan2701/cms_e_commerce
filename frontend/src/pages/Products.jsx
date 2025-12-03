@@ -16,8 +16,7 @@ const Products = () => {
   // điều hướng
   const nagative = useNavigate();
 
-  // state để refresh lại trang sau khi xóa hoặc cập nhật
-  const [refresh, setRefresh] = useState(0);
+
 
   // settate cho modal xem reviews
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -32,7 +31,7 @@ const Products = () => {
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState("id");
   const [order, setOrder] = useState("desc");
-  const [include, setInclude] = useState("brands,reviews,suppliers");
+  const include = "brands,reviews,suppliers";
 
   const { products, setProducts, meta, loading } = useProducts({
     page,
@@ -40,7 +39,6 @@ const Products = () => {
     sortBy,
     include,
     order,
-    refresh
   });
 
   const handleDelete = async (id) => {
@@ -409,8 +407,9 @@ const Products = () => {
               onClick={async () => {
                 try {
                   await updateProduct(editForm.id, editForm);
-                  setRefresh(prev => prev + 1);
+                  setProducts(prev => prev.map(p => p.id === editForm.id ? editForm : p));
                   setShowEditModal(false);
+
                   setPage(1);
 
                   showAlert("Cập nhật sản phẩm thành công!", "success");   // 🔥 ALERT

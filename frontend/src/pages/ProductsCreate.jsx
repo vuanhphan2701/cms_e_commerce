@@ -6,8 +6,12 @@ import { getBrands } from "../api/brandApi";
 import { getCategories } from "../api/categoryApi";
 import { getSuppliers } from "../api/supplierApi";
 import { useNavigate } from "react-router-dom";
+import { useAlert } from "../components/common/AlertContext";
 
 const ProductCreate = () => {
+  
+  // use alert context
+  const { showAlert } = useAlert();
   const navigate = useNavigate();
 
   const [brands, setBrands] = useState([]);
@@ -24,7 +28,7 @@ const ProductCreate = () => {
   const handleCreate = async (data) => {
     try {
       await createProduct(data);
-      alert("Tạo sản phẩm thành công!");
+      showAlert("Tạo sản phẩm thành công!");
       navigate("/product");
     } catch (err) {
       
@@ -39,13 +43,13 @@ const ProductCreate = () => {
         messages += `• ${errorBag[field][0]}\n`;
       }
 
-      alert("❌ Lỗi nhập liệu:\n" + messages);
+      showAlert("❌ Lỗi nhập liệu:\n" + messages);
       return;
     }
 
     // Nếu lỗi khác (500, network…)
     console.error(err);
-    alert("Lỗi khi tạo sản phẩm!");
+    showAlert("Lỗi khi tạo sản phẩm!");
     }
   };
 
