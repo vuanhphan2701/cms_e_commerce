@@ -4,8 +4,8 @@ export default function AlertMessage() {
   const { alert } = useAlert();
 
   if (!alert.show) return null;
-  console.log("ALERT_SHOW:", alert.show);
-  console.log("MESSAGE:", alert.message);
+ // console.log("ALERT_SHOW:", alert.show);
+ // console.log("MESSAGE:", alert.message);
 
   return (
     <div

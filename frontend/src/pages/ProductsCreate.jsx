@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useAlert } from "../components/common/AlertContext";
 
 const ProductCreate = () => {
-  
+
   // use alert context
   const { showAlert } = useAlert();
   const navigate = useNavigate();
@@ -31,25 +31,25 @@ const ProductCreate = () => {
       showAlert("Tạo sản phẩm thành công!");
       navigate("/product");
     } catch (err) {
-      
-    // Nếu Laravel trả 422 lỗi validate
-    if (err.response && err.response.status === 422) {
+      // Nếu Laravel trả 422 lỗi validate
+      if (err.response && err.response.status === 422) {
 
-      const errorBag = err.response.data.errors;
+        const errorBag = err.response.data.message;
+       // console.log(errorBag)
 
-      let messages = "";
+        let messages = "";
+        for (let i in errorBag) {
+          messages += errorBag[i] + "\n";
+        }
+       // console.log(messages)
 
-      for (let field in errorBag) {
-        messages += `• ${errorBag[field][0]}\n`;
+        showAlert("Error:\n" + messages, "error");
+        return;
       }
 
-      showAlert("❌ Lỗi nhập liệu:\n" + messages);
-      return;
-    }
-
-    // Nếu lỗi khác (500, network…)
-    console.error(err);
-    showAlert("Lỗi khi tạo sản phẩm!");
+      // Nếu lỗi khác (500, network…)
+      console.error(err);
+      showAlert("Lỗi khi tạo sản phẩm!");
     }
   };
 
