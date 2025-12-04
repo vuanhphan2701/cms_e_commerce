@@ -1,13 +1,16 @@
 // pages/Products.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProducts } from "../hooks/useProducts";
 import { deleteProduct } from "../api/productApi";
 import { updateProduct } from "../api/productApi";
 import Layout from "../components/layout/Layout";
 import ProductTable from "../components/products/ProductTable";
+import ProductForm from "../components/products/ProductForm";
 import { useAlert } from "../components/common/AlertContext";
-
+import { getBrands } from "../api/brandApi";
+import { getCategories } from "../api/categoryApi";
+import { getSuppliers } from "../api/supplierApi";
 
 const Products = () => {
   // alert context
@@ -16,6 +19,17 @@ const Products = () => {
   // điều hướng
   const nagative = useNavigate();
 
+  // load brands, category, supplier
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+
+  useEffect(() => {
+    getBrands().then(res => setBrands(res.data));
+    getCategories().then(res => setCategories(res.data));
+    getSuppliers().then(res => setSuppliers(res.data));
+
+  }, []);
 
 
   // settate cho modal xem reviews
@@ -272,6 +286,7 @@ const Products = () => {
           </div>
         </div>
       )}
+      
       {/* MODAL CHỈNH SỬA SẢN PHẨM */}
       {showEditModal && editForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -287,132 +302,22 @@ const Products = () => {
               </button>
             </div>
 
-            {/* Form */}
-            <div className="space-y-3">
-
-              <div>
-                <label className="text-sm text-gray-600">Tên sản phẩm</label>
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">SKU</label>
-                <input
-                  type="text"
-                  value={editForm.sku}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, sku: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Giá</label>
-                <input
-                  type="number"
-                  value={editForm.price}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, price: Number(e.target.value) })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Tồn kho</label>
-                <input
-                  type="number"
-                  value={editForm.quantity}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, quantity: Number(e.target.value) })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Summary</label>
-                <textarea
-                  rows="2"
-                  value={editForm.summary}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, summary: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Mô tả</label>
-                <textarea
-                  rows="3"
-                  value={editForm.description}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, description: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Alias</label>
-                <input
-                  type="text"
-                  value={editForm.alias}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, alias: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Image URL</label>
-                <input
-                  type="text"
-                  value={editForm.image}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, image: e.target.value })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Trạng thái</label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, status: Number(e.target.value) })
-                  }
-                  className="border px-3 py-2 rounded w-full"
-                >
-                  <option value={1}>Còn hàng</option>
-                  <option value={0}>Hết hàng</option>
-                </select>
-              </div>
-
-            </div>
-
-            {/* Nút lưu */}
-            <button
-              onClick={async () => {
+            <ProductForm
+              product={editForm}
+              brands={brands}
+              categories={categories}
+              suppliers={suppliers}
+              onSubmit={async (data) => {
                 try {
-                  await updateProduct(editForm.id, editForm);
-                  setProducts(prev => prev.map(p => p.id === editForm.id ? editForm : p));
+                  await updateProduct(editForm.id, data);
+
+                  // cập nhật local state
+                  setProducts(prev =>
+                    prev.map(p => p.id === editForm.id ? { ...p, ...data } : p)
+                  );
+
                   setShowEditModal(false);
-
-                  setPage(1);
-
-                  showAlert("Cập nhật sản phẩm thành công!", "success");   // 🔥 ALERT
+                  showAlert("Cập nhật sản phẩm thành công!", "success");
 
                 } catch (err) {
                   if (err.message === "CONFLICT") {
@@ -420,16 +325,15 @@ const Products = () => {
                     return;
                   }
 
-                  showAlert("Cập nhật thất bại!", "error");              // 🔥 ALERT
+                  showAlert("Cập nhật thất bại!", "error");
                 }
               }}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Lưu thay đổi
-            </button>
+            />
+
           </div>
         </div>
       )}
+
 
     </Layout>
   );
