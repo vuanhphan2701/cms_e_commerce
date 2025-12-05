@@ -15,7 +15,7 @@ export function useProducts(options) {
         setMeta(res.meta.pagination);
       })
       .finally(() => setLoading(false));
-  }, [options.page, options.limit, options.sortBy, options.order, options.include]);
+  }, [options.page, options.limit, options.sortBy, options.order, options.include, options.category_id, options.brand_id, options.supplier_id]);
 
   return { products, setProducts, meta, loading };
 }

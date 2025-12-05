@@ -1,16 +1,15 @@
 // productApi.js
 import api from "./axios";
 
-export async function getAllProducts({ page = 1, limit = 10, sortBy = "id", order = "desc", include = "" }) {
-  const res = await api.get("product", {
-    params: { page, limit, sortBy, order, include }
-  });
+export async function getAllProducts(options = {}) {
+  const res = await api.get("product", { params: options });
 
   return {
-    items: res.data.data.data,  
+    items: res.data.data.data,
     meta: res.data.data.meta,
   };
 }
+
 
 export const getProductById = async (id) => {
   const res = await api.get(`product/${id}`);

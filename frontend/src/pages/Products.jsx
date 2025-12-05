@@ -32,19 +32,26 @@ const Products = () => {
   }, []);
 
 
-  // settate cho modal xem reviews
+  // settate for reviews modal
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // state cho modal chỉnh sửa sản phẩm
+  // state for edit product modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
 
-  // State điều khiển API query
+  // state for filters
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState("id");
   const [order, setOrder] = useState("desc");
+
+  // filter for category, brand, supplier
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterBrand, setFilterBrand] = useState("");
+  const [filterSupplier, setFilterSupplier] = useState("");
+
+  // load all related entities
   const include = "brands,reviews,suppliers";
 
   const { products, setProducts, meta, loading } = useProducts({
@@ -53,8 +60,12 @@ const Products = () => {
     sortBy,
     include,
     order,
+    category_id: filterCategory,
+    brand_id: filterBrand,
+    supplier_id: filterSupplier
   });
 
+  // handle delete product
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return;
 
@@ -75,9 +86,6 @@ const Products = () => {
 
 
 
-
-    // Reload bằng cách set lại page
-    //setPage(1);
   };
 
   if (loading) {
@@ -129,6 +137,8 @@ const Products = () => {
               <option value="quantity">Tồn kho</option>
             </select>
           </div>
+
+          {/* Order */}
           <div >
             <label className="text-sm text-gray-600">Order</label>
             <select
@@ -141,6 +151,59 @@ const Products = () => {
             </select>
           </div>
 
+          {/* Category Filter */}
+          <div>
+            <label className="text-sm text-gray-600">Category</label>
+            <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setPage(1);
+              }}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="">All</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Brand Filter */}
+          <div>
+            <label className="text-sm text-gray-600">Brand</label>
+            <select
+              value={filterBrand}
+              onChange={(e) => {
+                setFilterBrand(e.target.value);
+                setPage(1);
+              }}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="">All</option>
+              {brands.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Supplier Filter */}
+          <div>
+            <label className="text-sm text-gray-600">Supplier</label>
+            <select
+              value={filterSupplier}
+              onChange={(e) => {
+                setFilterSupplier(e.target.value);
+                setPage(1);
+              }}
+              className="border px-2 py-1 rounded ml-2"
+            >
+              <option value="">All</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* RIGHT: Nút tạo */}
@@ -286,7 +349,7 @@ const Products = () => {
           </div>
         </div>
       )}
-      
+
       {/* MODAL CHỈNH SỬA SẢN PHẨM */}
       {showEditModal && editForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -310,12 +373,20 @@ const Products = () => {
               onSubmit={async (data) => {
                 try {
                   await updateProduct(editForm.id, data);
+                  const updatedProduct = {
+                    ...editForm,
+                    ...data,
+                    brand: brands.find(b => b.id === data.brand_id),
+                    supplier: suppliers.find(s => s.id === data.supplier_id),
+                    category: categories.find(c => c.id === data.category_id),
+                    version: editForm.version + 1
+                  };
 
-                  // cập nhật local state
                   setProducts(prev =>
-                    prev.map(p => p.id === editForm.id ? { ...p, ...data } : p)
+                    prev.map(p => p.id === editForm.id ? updatedProduct : p)
                   );
 
+                  setEditForm(updatedProduct);  // ⭐ fix UI không update
                   setShowEditModal(false);
                   showAlert("Cập nhật sản phẩm thành công!", "success");
 
