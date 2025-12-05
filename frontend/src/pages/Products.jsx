@@ -1,16 +1,29 @@
 // pages/Products.jsx
 import { useState, useEffect } from "react";
+// import navigation hook
 import { useNavigate } from "react-router-dom";
+// import custom hook to load products
 import { useProducts } from "../hooks/useProducts";
 import { deleteProduct } from "../api/productApi";
 import { updateProduct } from "../api/productApi";
+// import Layout component
 import Layout from "../components/layout/Layout";
+// import ProductTable component
 import ProductTable from "../components/products/ProductTable";
+// import ProductForm component
 import ProductForm from "../components/products/ProductForm";
+// import alert context
 import { useAlert } from "../components/common/AlertContext";
+// import APIs to load brands, categories, suppliers
 import { getBrands } from "../api/brandApi";
 import { getCategories } from "../api/categoryApi";
 import { getSuppliers } from "../api/supplierApi";
+// import ProductFilters component
+import ProductFilters from "../components/products/ProductFilter";
+// import ProductEditModal component
+import ProductEditModal from "../components/products/ProductEditModal";
+// import ProductReviewModal component
+import ProductReviewsModal from "../components/products/ProductReviewsModal";
 
 const Products = () => {
   // alert context
@@ -24,6 +37,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
 
+  // load brands, categories, suppliers on component mount
   useEffect(() => {
     getBrands().then(res => setBrands(res.data));
     getCategories().then(res => setCategories(res.data));
@@ -104,107 +118,26 @@ const Products = () => {
       <div className="bg-white p-4 rounded-lg shadow mb-6 flex items-center justify-between">
 
         {/* LEFT: Bộ lọc */}
-        <div className="flex items-center gap-6">
+        <ProductFilters
+          limit={limit}
+          setLimit={setLimit}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          order={order}
+          setOrder={setOrder}
 
-          {/* Limit */}
-          <div>
-            <label className="text-sm text-gray-600">Số lượng / trang</label>
-            <select
-              value={limit}
-              onChange={(e) => {
-                setLimit(Number(e.target.value));
-                setPage(1);
-              }}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </select>
-          </div>
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterBrand={filterBrand}
+          setFilterBrand={setFilterBrand}
+          filterSupplier={filterSupplier}
+          setFilterSupplier={setFilterSupplier}
 
-          {/* Sort */}
-          <div>
-            <label className="text-sm text-gray-600">Sắp xếp theo</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="id">ID</option>
-              <option value="price">Giá</option>
-              <option value="name">Tên</option>
-              <option value="quantity">Tồn kho</option>
-            </select>
-          </div>
+          categories={categories}
+          brands={brands}
+          suppliers={suppliers}
+        />
 
-          {/* Order */}
-          <div >
-            <label className="text-sm text-gray-600">Order</label>
-            <select
-              value={order}
-              onChange={(e) => setOrder(e.target.value)}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="desc">Newest</option>
-              <option value="asc">Oldest</option>
-            </select>
-          </div>
-
-          {/* Category Filter */}
-          <div>
-            <label className="text-sm text-gray-600">Category</label>
-            <select
-              value={filterCategory}
-              onChange={(e) => {
-                setFilterCategory(e.target.value);
-                setPage(1);
-              }}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="">All</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Brand Filter */}
-          <div>
-            <label className="text-sm text-gray-600">Brand</label>
-            <select
-              value={filterBrand}
-              onChange={(e) => {
-                setFilterBrand(e.target.value);
-                setPage(1);
-              }}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="">All</option>
-              {brands.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Supplier Filter */}
-          <div>
-            <label className="text-sm text-gray-600">Supplier</label>
-            <select
-              value={filterSupplier}
-              onChange={(e) => {
-                setFilterSupplier(e.target.value);
-                setPage(1);
-              }}
-              className="border px-2 py-1 rounded ml-2"
-            >
-              <option value="">All</option>
-              {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
 
         {/* RIGHT: Nút tạo */}
         <button
@@ -290,120 +223,52 @@ const Products = () => {
 
       {/* MODAL XEM REVIEWS */}
       {showModal && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-[600px] max-h-[80vh] overflow-y-auto">
-
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
-                Reviews: {selectedProduct.name}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-red-500 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            {selectedProduct.reviews?.length > 0 ? (
-              selectedProduct.reviews.map((rv) => (
-                <div
-                  key={rv.id}
-                  className="border rounded p-4 mb-3 bg-gray-50 shadow-sm"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-yellow-500 font-semibold">
-                      {"⭐".repeat(rv.rating)}
-                    </div>
-
-                    {rv.is_verified ? (
-                      <span className="text-green-600 text-xs font-medium">
-                        ✔ Đã xác minh
-                      </span>
-                    ) : (
-                      <span className="text-gray-500 text-xs">Không xác minh</span>
-                    )}
-                  </div>
-
-                  <p className="text-sm text-gray-800 mb-3">{rv.content}</p>
-
-                  <p className="text-xs text-gray-600">👍 {rv.like_count} lượt thích</p>
-
-                  {rv.reply_content && (
-                    <div className="mt-3 p-3 bg-white border rounded">
-                      <p className="text-xs font-semibold text-blue-600">
-                        Phản hồi từ shop:
-                      </p>
-                      <p className="text-sm text-gray-700">{rv.reply_content}</p>
-                    </div>
-                  )}
-
-                  <p className="text-xs text-gray-400 mt-2">
-                    {new Date(rv.created_at).toLocaleString("vi-VN")}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">Chưa có review nào.</p>
-            )}
-          </div>
-        </div>
+        <ProductReviewsModal
+          product={selectedProduct}
+          onClose={() => setShowModal(false)}
+        />
       )}
 
       {/* MODAL CHỈNH SỬA SẢN PHẨM */}
       {showEditModal && editForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-[600px] max-h-[80vh] overflow-y-auto">
+        <ProductEditModal
+          product={editForm}
+          brands={brands}
+          categories={categories}
+          suppliers={suppliers}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={async (data) => {
 
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Chỉnh sửa sản phẩm</h2>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="text-red-500 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
+            try {
+              await updateProduct(editForm.id, data);
 
-            <ProductForm
-              product={editForm}
-              brands={brands}
-              categories={categories}
-              suppliers={suppliers}
-              onSubmit={async (data) => {
-                try {
-                  await updateProduct(editForm.id, data);
-                  const updatedProduct = {
-                    ...editForm,
-                    ...data,
-                    brand: brands.find(b => b.id === data.brand_id),
-                    supplier: suppliers.find(s => s.id === data.supplier_id),
-                    category: categories.find(c => c.id === data.category_id),
-                    version: editForm.version + 1
-                  };
+              const updatedProduct = {
+                ...editForm,
+                ...data,
+                brand: brands.find(b => b.id === data.brand_id),
+                supplier: suppliers.find(s => s.id === data.supplier_id),
+                category: categories.find(c => c.id === data.category_id),
+                version: editForm.version + 1
+              };
 
-                  setProducts(prev =>
-                    prev.map(p => p.id === editForm.id ? updatedProduct : p)
-                  );
+              setProducts(prev =>
+                prev.map(p => p.id === editForm.id ? updatedProduct : p)
+              );
 
-                  setEditForm(updatedProduct);  // ⭐ fix UI không update
-                  setShowEditModal(false);
-                  showAlert("Cập nhật sản phẩm thành công!", "success");
+              setEditForm(updatedProduct);
+              setShowEditModal(false);
+              showAlert("Product updated successfully!", "success");
 
-                } catch (err) {
-                  if (err.message === "CONFLICT") {
-                    showAlert("❗ Xung đột dữ liệu: sản phẩm đã bị người khác sửa.", "error");
-                    return;
-                  }
+            } catch (err) {
+              if (err.message === "CONFLICT") {
+                showAlert("❗ Data conflict: someone updated this product.", "error");
+                return;
+              }
 
-                  showAlert("Cập nhật thất bại!", "error");
-                }
-              }}
-            />
-
-          </div>
-        </div>
-      )}
+              showAlert("Update failed!", "error");
+            }
+          }}
+        />)}
 
 
     </Layout>
