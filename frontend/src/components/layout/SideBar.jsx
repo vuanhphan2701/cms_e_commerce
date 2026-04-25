@@ -1,13 +1,15 @@
-// components/Layout/Sidebar.jsx
 import React from 'react';
-import { HomeIcon, CubeIcon, Cog6ToothIcon, ArrowLeftOnRectangleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, CubeIcon, Cog6ToothIcon, ArrowLeftOnRectangleIcon, PlusCircleIcon, TagIcon, RectangleStackIcon, TruckIcon, StarIcon } from '@heroicons/react/24/outline';
 // import { NavLink } from 'react-router-dom'; // Giả sử dùng NavLink
 
 const Sidebar = () => {
   const navItems = [
     { name: 'Tổng quan', icon: HomeIcon, path: '/' },
     { name: 'Sản phẩm', icon: CubeIcon, path: '/product' },
-    { name: 'Tạo', icon: PlusCircleIcon, path: '/product/create/' },
+    { name: 'Danh mục', icon: RectangleStackIcon, path: '/category' },
+    { name: 'Thương hiệu', icon: TagIcon, path: '/brand' },
+    { name: 'Nhà cung cấp', icon: TruckIcon, path: '/supplier' },
+    { name: 'Đánh giá', icon: StarIcon, path: '/review' },
     { name: 'Cài đặt', icon: Cog6ToothIcon, path: '/settings' },
   ];
 

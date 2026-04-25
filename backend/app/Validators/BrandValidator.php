@@ -18,7 +18,7 @@ class BrandValidator extends BaseValidator
         ];
     }
 
-    public static function validateUpdate( $id): array
+    public static function validateUpdate($id): array
     {
         return [
             'name'        => "required|string|max:255|unique:brands,name,$id",

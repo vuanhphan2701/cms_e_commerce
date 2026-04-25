@@ -1,5 +1,5 @@
 // components/Layout/MainLayout.jsx
-import Sidebar from './Sidebar';
+import Sidebar from './SideBar';
 import Header from './Header';
 import Footer from './Footer';
 

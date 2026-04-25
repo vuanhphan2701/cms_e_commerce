@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import Layout from "../components/layout/Layout";
-import ProductForm from "../components/products/ProductForm";
-import { createProduct } from "../api/productApi";
-import { getBrands } from "../api/brandApi";
-import { getCategories } from "../api/categoryApi";
-import { getSuppliers } from "../api/supplierApi";
+import Layout from "../../components/layout/Layout";
+import ProductForm from "../../components/products/ProductForm";
+import { createProduct } from "../../api/productApi";
+import { getBrands } from "../../api/brandApi";
+import { getCategories } from "../../api/categoryApi";
+import { getSuppliers } from "../../api/supplierApi";
 import { useNavigate } from "react-router-dom";
-import { useAlert } from "../components/common/AlertContext";
+import { useAlert } from "../../components/common/AlertContext";
 
 const ProductCreate = () => {
 
