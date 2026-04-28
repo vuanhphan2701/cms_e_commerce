@@ -4,11 +4,13 @@ import { brandRoutes } from "./routes/brandRoutes";
 import { categoryRoutes } from "./routes/categoryRoutes";
 import { supplierRoutes } from "./routes/supplierRoutes";
 import { reviewRoutes } from "./routes/reviewRoutes";
+import { authRoutes } from "./routes/authRoutes";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {authRoutes}
         {productRoutes}
         {brandRoutes}
         {categoryRoutes}

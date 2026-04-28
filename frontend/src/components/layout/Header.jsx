@@ -1,4 +1,3 @@
-// components/Layout/Header.jsx
 import { UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
 
 const Header = () => {
@@ -18,4 +17,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default Header;

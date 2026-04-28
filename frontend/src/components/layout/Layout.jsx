@@ -2,16 +2,27 @@
 import Sidebar from './SideBar';
 import Header from './Header';
 import Footer from './Footer';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Layout = ({ children }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
   return (
     <div className="flex bg-gray-50">
       {/* Sidebar - Cố định */}
       <Sidebar />
-      
+
       {/* Vùng đệm cho Sidebar, để Main Content không bị ẩn */}
-      <div className="w-64 flex-shrink-0"></div> 
-      
+      <div className="w-64 flex-shrink-0"></div>
+
       {/* Main Content */}
       <div className="flex-grow flex flex-col min-h-screen">
         <Header />
