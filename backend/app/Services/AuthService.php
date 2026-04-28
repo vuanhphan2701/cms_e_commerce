@@ -2,31 +2,32 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
+    protected UserRepository $userRepository;
+
+    public function __construct(UserRepository $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
+
     /**
      * Register a new user and return tokens.
      */
     public function register(array $data)
     {
-        $user = User::create([
+        $user = $this->userRepository->save([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
 
         $token = JWTAuth::fromUser($user);
-
-        return [
-            'user' => $user,
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => config('jwt.ttl') * 60
-        ];
+        return $this->respondWithToken($token, $user);
     }
 
     /**
@@ -68,13 +69,13 @@ class AuthService
     /**
      * Get the token array structure.
      */
-    protected function respondWithToken($token)
+    protected function respondWithToken($token, $user = null)
     {
         return [
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expires_in' => config('jwt.ttl') * 60,
-            'user' => auth('api')->user()
+            'user' => $user ?? auth('api')->user()
         ];
     }
 }

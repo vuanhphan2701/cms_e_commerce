@@ -8,18 +8,27 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Api\AuthController;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+/**
+ * Authentication Routes
+ */
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes (Yêu cầu phải có token hợp lệ)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', [AuthController::class, 'me']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::middleware('jwt.auth')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
+    });
+});
 
+/**
+ * Protected Resource Routes
+ */
+Route::middleware('jwt.auth')->group(function () {
     /**
      * Product API Routes
      */
-
     Route::get('/product', [ProductController::class, 'index']);
     Route::get('/product/{id}', [ProductController::class, 'show']);
     Route::post('/product', [ProductController::class, 'store']);

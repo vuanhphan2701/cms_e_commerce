@@ -6,10 +6,12 @@ use App\Services\AuthService;
 use Core\Controllers\BaseController;
 use Core\Response;
 use Illuminate\Http\Request;
+use App\Validators\AuthValidator;
 
 class AuthController extends BaseController
 {
     protected AuthService $authService;
+    protected string $validator = AuthValidator::class;
 
     public function __construct(AuthService $authService)
     {
@@ -21,11 +23,7 @@ class AuthController extends BaseController
      */
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $this->validate('validateRegister');
 
         try {
             $result = $this->authService->register($request->all());
@@ -40,10 +38,7 @@ class AuthController extends BaseController
      */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
+        $this->validate('validateLogin');
 
         $result = $this->authService->login($request->only('email', 'password'));
 
@@ -73,6 +68,9 @@ class AuthController extends BaseController
     public function me()
     {
         $user = $this->authService->me();
+        if (!$user) {
+            return Response::error('Người dùng không tồn tại hoặc chưa đăng nhập', 404);
+        }
         return Response::success($user, 'Lấy thông tin người dùng thành công');
     }
 
