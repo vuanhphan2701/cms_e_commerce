@@ -40,7 +40,7 @@ class AuthController extends BaseController
     {
         $this->validate('validateLogin');
 
-        $result = $this->authService->login($request->only('email', 'password'));
+        $result = $this->authService->login($request->only('email', 'password'), $request->ip());
 
         if (!$result) {
             return Response::error('Thông tin đăng nhập không chính xác.', 401);

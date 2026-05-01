@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -44,6 +43,8 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     /**
@@ -54,6 +55,8 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'failed_login_attempts',
+        'locked_until',
     ];
 
     /**
@@ -66,6 +69,56 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'locked_until' => 'datetime',
         ];
+    }
+
+    /**
+     * Check if the account is currently locked.
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_until && $this->locked_until->isFuture();
+    }
+
+    /**
+     * Lock the account for a given number of minutes.
+     */
+    public function lockAccount(int $minutes = 30): void
+    {
+        $this->update([
+            'locked_until' => now()->addMinutes($minutes),
+        ]);
+    }
+
+    /**
+     * Increment failed login attempts. Lock if threshold is reached.
+     */
+    public function incrementFailedAttempts(int $maxAttempts = 5, int $lockMinutes = 30): void
+    {
+        $this->increment('failed_login_attempts');
+
+        if ($this->failed_login_attempts >= $maxAttempts) {
+            $this->lockAccount($lockMinutes);
+        }
+    }
+
+    /**
+     * Reset failed login attempts on successful login.
+     */
+    public function resetFailedAttempts(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+        ]);
+    }
+
+    /**
+     * Override: send custom email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification());
     }
 }

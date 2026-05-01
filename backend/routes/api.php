@@ -12,13 +12,24 @@ use App\Http\Controllers\Api\AuthController;
  * Authentication Routes
  */
 Route::prefix('auth')->group(function () {
+    // Public auth routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
+    // Email verification (public, signed URL from email)
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->name('verification.verify');
+
+    // Password reset (public)
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+    // Protected auth routes
     Route::middleware('jwt.auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
+        Route::post('/email/resend', [AuthController::class, 'resendVerification']);
     });
 });
 

@@ -28,4 +28,26 @@ class AuthValidator extends BaseValidator
             'password' => 'required|string',
         ];
     }
+
+    /**
+     * Validation rules for forgot password.
+     */
+    public static function validateForgotPassword(): array
+    {
+        return [
+            'email' => 'required|string|email',
+        ];
+    }
+
+    /**
+     * Validation rules for reset password.
+     */
+    public static function validateResetPassword(): array
+    {
+        return [
+            'token' => 'required|string',
+            'email' => 'required|string|email',
+            'password' => 'required|string|min:8|confirmed',
+        ];
+    }
 }
