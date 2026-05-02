@@ -23,35 +23,19 @@ class VerifyEmailNotification extends Notification
     }
 
     /**
-     * Build the verification URL.
-     */
-    protected function verificationUrl($notifiable): string
-    {
-        return URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
-            [
-                'id' => $notifiable->getKey(),
-                'hash' => sha1($notifiable->getEmailForVerification()),
-            ]
-        );
-    }
-
-    /**
      * Build the mail message.
-     * ✏️ EDIT THE CONTENT BELOW TO CUSTOMIZE YOUR EMAIL
      */
     public function toMail($notifiable): MailMessage
     {
-        $url = $this->verificationUrl($notifiable);
+        $otp = $notifiable->email_verification_otp;
 
         return (new MailMessage)
-            ->subject('Xác thực email - E-commerce CMS')
+            ->subject('Mã xác thực email - E-commerce CMS')
             ->greeting('Xin chào ' . $notifiable->name . '!')
             ->line('Cảm ơn bạn đã đăng ký tài khoản tại E-commerce CMS.')
-            ->line('Vui lòng nhấn nút bên dưới để xác thực địa chỉ email của bạn.')
-            ->action('Xác Thực Email', $url)
-            ->line('Liên kết này sẽ hết hạn sau 60 phút.')
+            ->line('Mã xác thực (OTP) của bạn là:')
+            ->line(new \Illuminate\Support\HtmlString('<div style="font-size: 24px; font-weight: bold; letter-spacing: 5px; text-align: center; padding: 10px; background-color: #f3f4f6; border-radius: 5px; margin: 20px 0;">' . $otp . '</div>'))
+            ->line('Mã này sẽ hết hạn sau 15 phút.')
             ->line('Nếu bạn không tạo tài khoản, vui lòng bỏ qua email này.')
             ->salutation('Trân trọng, E-commerce CMS');
     }

@@ -44,12 +44,15 @@ class AuthService
             'password' => Hash::make($data['password']),
         ]);
 
+        // Generate OTP before sending email
+        $user->generateEmailOtp();
+
         // Fire event so Laravel sends the verification email
         event(new Registered($user));
 
         return [
             'user' => $user,
-            'message' => 'Vui lòng kiểm tra email để xác thực tài khoản.'
+            'message' => 'Vui lòng kiểm tra email để nhận mã xác thực (OTP).'
         ];
     }
 
@@ -140,8 +143,11 @@ class AuthService
             return ['message' => 'Email đã được xác thực.'];
         }
 
+        // Generate a new OTP
+        $user->generateEmailOtp();
+
         $user->sendEmailVerificationNotification();
-        return ['message' => 'Email xác thực đã được gửi lại.'];
+        return ['message' => 'Mã xác thực mới đã được gửi đến email của bạn.'];
     }
 
     /**

@@ -45,6 +45,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'password',
         'failed_login_attempts',
         'locked_until',
+        'email_verification_otp',
+        'email_verification_otp_expires_at',
     ];
 
     /**
@@ -57,6 +59,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'remember_token',
         'failed_login_attempts',
         'locked_until',
+        'email_verification_otp',
     ];
 
     /**
@@ -70,6 +73,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'locked_until' => 'datetime',
+            'email_verification_otp_expires_at' => 'datetime',
         ];
     }
 
@@ -115,10 +119,66 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     }
 
     /**
+     * Generate a new 6-digit OTP for email verification.
+     */
+    public function generateEmailOtp(int $expiresInMinutes = 15): string
+    {
+        // Generate a 6 digit random number
+        $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+        $this->update([
+            'email_verification_otp' => $otp,
+            'email_verification_otp_expires_at' => now()->addMinutes($expiresInMinutes),
+        ]);
+
+        return $otp;
+    }
+
+    /**
+     * Verify the provided OTP.
+     */
+    public function verifyEmailOtp(string $otp): bool
+    {
+        if (!$this->email_verification_otp || !$this->email_verification_otp_expires_at) {
+            return false;
+        }
+
+        if ($this->email_verification_otp !== $otp) {
+            return false;
+        }
+
+        if ($this->email_verification_otp_expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Clear OTP data.
+     */
+    public function clearEmailOtp(): void
+    {
+        $this->update([
+            'email_verification_otp' => null,
+            'email_verification_otp_expires_at' => null,
+        ]);
+    }
+
+    /**
      * Override: send custom email verification notification.
      */
     public function sendEmailVerificationNotification()
     {
         $this->notify(new \App\Notifications\VerifyEmailNotification());
+    }
+
+    /**
+     * Override: send custom password reset notification.
+     * Points reset link to the frontend app instead of the backend.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token));
     }
 }

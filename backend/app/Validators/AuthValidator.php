@@ -50,4 +50,25 @@ class AuthValidator extends BaseValidator
             'password' => 'required|string|min:8|confirmed',
         ];
     }
+
+    /**
+     * Validation rules for verify OTP.
+     */
+    public static function validateVerifyOtp(): array
+    {
+        return [
+            'email' => 'required|string|email',
+            'otp' => 'required|string|size:6',
+        ];
+    }
+
+    /**
+     * Validation rules for resend verification email.
+     */
+    public static function validateResendVerification(): array
+    {
+        return [
+            'email' => 'required|string|email',
+        ];
+    }
 }

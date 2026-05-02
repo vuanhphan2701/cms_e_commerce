@@ -16,9 +16,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
-    // Email verification (public, signed URL from email)
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-        ->name('verification.verify');
+    // Email verification (OTP)
+    Route::post('/email/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 
     // Password reset (public)
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -29,7 +29,6 @@ Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
-        Route::post('/email/resend', [AuthController::class, 'resendVerification']);
     });
 });
 

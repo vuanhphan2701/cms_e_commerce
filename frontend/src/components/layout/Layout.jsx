@@ -9,10 +9,22 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check token on mount
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
     }
+
+    // Listen for storage changes from other tabs
+    // When tab A logs out (removes token), tab B detects it here
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' && !e.newValue) {
+        navigate('/login');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [navigate]);
 
   return (
