@@ -1,30 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\BrandController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AdminAuthController;
 
 /**
- * Authentication Routes
+ * User Authentication Routes (Worker / Employer)
  */
 Route::prefix('auth')->group(function () {
-    // Public auth routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
-    // Email verification (OTP)
     Route::post('/email/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 
-    // Password reset (public)
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-    // Protected auth routes
     Route::middleware('jwt.auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -33,51 +25,20 @@ Route::prefix('auth')->group(function () {
 });
 
 /**
- * Protected Resource Routes
+ * Admin Authentication Routes (Super Admin, Moderator, Finance)
  */
-Route::middleware('jwt.auth')->group(function () {
-    /**
-     * Product API Routes
-     */
-    Route::get('/product', [ProductController::class, 'index']);
-    Route::get('/product/{id}', [ProductController::class, 'show']);
-    Route::post('/product', [ProductController::class, 'store']);
-    Route::put('/product/{id}', [ProductController::class, 'update']);
-    Route::delete('/product/{id}', [ProductController::class, 'destroy']);
+Route::prefix('admin')->group(function () {
+    // Public routes
+    Route::post('/login', [AdminAuthController::class, 'login']);
+    Route::post('/refresh-token', [AdminAuthController::class, 'refreshToken']);
 
-    /**
-     * Category API Routes
-     */
-    Route::get('/category', [CategoryController::class, 'index']);
-    Route::get('/category/{id}', [CategoryController::class, 'show']);
-    Route::post('/category', [CategoryController::class, 'store']);
-    Route::put('/category/{id}', [CategoryController::class, 'update']);
-    Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
+    // Protected routes
+    Route::middleware('auth:admin')->group(function () {
+        Route::get('/me', [AdminAuthController::class, 'me']);
+        Route::post('/logout', [AdminAuthController::class, 'logout']);
+        Route::post('/logout-all', [AdminAuthController::class, 'logoutAll']);
 
-    /**
-     * Brand API Routes
-     */
-    Route::get('/brand', [BrandController::class, 'index']);
-    Route::get('/brand/{id}', [BrandController::class, 'show']);
-    Route::post('/brand', [BrandController::class, 'store']);
-    Route::put('/brand/{id}', [BrandController::class, 'update']);
-    Route::delete('/brand/{id}', [BrandController::class, 'destroy']);
-
-    /**
-     * Supplier API Routes
-     */
-    Route::get('/supplier', [SupplierController::class, 'index']);
-    Route::get('/supplier/{id}', [SupplierController::class, 'show']);
-    Route::post('/supplier', [SupplierController::class, 'store']);
-    Route::put('/supplier/{id}', [SupplierController::class, 'update']);
-    Route::delete('/supplier/{id}', [SupplierController::class, 'destroy']);
-
-    /**
-     * Review API Routes
-     */
-    Route::get('/review', [ReviewController::class, 'index']);
-    Route::get('/review/{id}', [ReviewController::class, 'show']);
-    Route::post('/review', [ReviewController::class, 'store']);
-    Route::put('/review/{id}', [ReviewController::class, 'update']);
-    Route::delete('/review/{id}', [ReviewController::class, 'destroy']);
+        Route::get('/sessions', [AdminAuthController::class, 'getSessions']);
+        Route::delete('/sessions/{id}', [AdminAuthController::class, 'revokeSession']);
+    });
 });

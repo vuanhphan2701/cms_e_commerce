@@ -14,7 +14,7 @@ class AdminSeeder extends Seeder
     {
         $admin = Admin::create([
             'name' => 'Super Admin',
-            'email' => 'admin@microjob.com',
+            'email' => 'pavu2701@gmail.com',
             'password_hash' => Hash::make('password123'),
             'role' => 'super_admin',
             'is_active' => true,
@@ -28,7 +28,7 @@ class AdminSeeder extends Seeder
             'is_trusted' => true,
             'expires_at' => now()->addDays(7),
         ]);
-        
+
         $admin->activityLogs()->create([
             'severity' => 'low',
             'action_type' => 'auth',

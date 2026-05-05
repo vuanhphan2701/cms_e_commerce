@@ -104,33 +104,12 @@ class AuthController extends BaseController
     {
         $this->validate('validateVerifyOtp');
 
-        $user = \App\Models\User::where('email', $request->input('email'))->first();
-
-        if (!$user) {
-            return Response::error('Người dùng không tồn tại.', 404);
+        try {
+            $result = $this->authService->verifyOtp($request->input('email'), $request->input('otp'));
+            return Response::success($result, 'Xác thực email thành công.');
+        } catch (\Exception $e) {
+            return Response::error($e->getMessage(), 400);
         }
-
-        if ($user->hasVerifiedEmail()) {
-            return Response::success(null, 'Email đã được xác thực trước đó.');
-        }
-
-        if (!$user->verifyEmailOtp($request->input('otp'))) {
-            return Response::error('Mã xác thực không hợp lệ hoặc đã hết hạn.', 400);
-        }
-
-        // OTP is valid
-        $user->markEmailAsVerified();
-        $user->clearEmailOtp();
-
-        // Automatically log the user in
-        $token = auth('api')->login($user);
-
-        return Response::success([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth('api')->factory()->getTTL() * 60,
-            'user' => $user,
-        ], 'Xác thực email thành công.');
     }
 
     /**
@@ -140,17 +119,11 @@ class AuthController extends BaseController
     {
         $this->validate('validateResendVerification');
 
-        $user = \App\Models\User::where('email', $request->input('email'))->first();
-
-        if (!$user) {
-            return Response::error('Người dùng không tồn tại.', 404);
-        }
-
         try {
-            $result = $this->authService->sendVerificationEmail($user);
+            $result = $this->authService->sendVerificationEmailByEmail($request->input('email'));
             return Response::success(null, $result['message']);
         } catch (\Exception $e) {
-            return Response::error('Không thể gửi email xác thực: ' . $e->getMessage(), 500);
+            return Response::error('Không thể gửi email xác thực: ' . $e->getMessage(), 404);
         }
     }
 

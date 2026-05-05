@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Admin;
-use App\Models\AdminSession;
-use App\Models\FailedLoginAttempt;
-use App\Models\AdminActivityLog;
+use App\Repositories\AdminRepository;
+use App\Repositories\AdminSessionRepository;
+use App\Repositories\FailedLoginAttemptRepository;
+use App\Repositories\AdminActivityLogRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-
 use PragmaRX\Google2FA\Google2FA;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -20,14 +19,40 @@ class AdminAuthService
     private const MAX_ATTEMPTS = 5;
     private const LOCKOUT_MINUTES = 15;
 
+    protected AdminRepository $adminRepository;
+    protected AdminSessionRepository $adminSessionRepository;
+    protected FailedLoginAttemptRepository $failedLoginAttemptRepository;
+    protected AdminActivityLogRepository $adminActivityLogRepository;
+
+    public function __construct(
+        AdminRepository $adminRepository,
+        AdminSessionRepository $adminSessionRepository,
+        FailedLoginAttemptRepository $failedLoginAttemptRepository,
+        AdminActivityLogRepository $adminActivityLogRepository
+    ) {
+        $this->adminRepository = $adminRepository;
+        $this->adminSessionRepository = $adminSessionRepository;
+        $this->failedLoginAttemptRepository = $failedLoginAttemptRepository;
+        $this->adminActivityLogRepository = $adminActivityLogRepository;
+    }
+
+    public function register(array $data)
+    {
+        return $this->adminRepository->save([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password_hash' => Hash::make($data['password']),
+            'role' => $data['role'] ?? 'moderator',
+            'is_active' => true,
+        ]);
+    }
+
     public function login(array $credentials, string $ipAddress, ?string $userAgent)
     {
         $email = $credentials['email'];
 
         // 1. Check Rate Limiting
-        $attempt = FailedLoginAttempt::where('email', $email)
-            ->where('ip_address', $ipAddress)
-            ->first();
+        $attempt = $this->failedLoginAttemptRepository->findByEmailAndIp($email, $ipAddress);
 
         if ($attempt && $attempt->locked_until && $attempt->locked_until > now()) {
             return [
@@ -38,7 +63,7 @@ class AdminAuthService
         }
 
         // 2. Validate Credentials
-        $admin = Admin::where('email', $email)->first();
+        $admin = $this->adminRepository->findByEmail($email);
 
         if (!$admin || !Hash::check($credentials['password'], $admin->password_hash)) {
             $this->incrementFailedAttempt($email, $ipAddress, $attempt);
@@ -59,35 +84,32 @@ class AdminAuthService
 
         // 3. 2FA Check
         $google2fa = new Google2FA();
-        
+
         if (isset($credentials['setup_secret']) && isset($credentials['two_factor_code'])) {
             $valid = $google2fa->verifyKey($credentials['setup_secret'], $credentials['two_factor_code']);
             if (!$valid) {
                 return ['error' => true, 'status' => 401, 'message' => 'Mã xác thực 2FA không chính xác.'];
             }
-            $admin->update(['two_factor_secret' => $credentials['setup_secret']]);
-        } 
-        else if (!$admin->two_factor_secret) {
+            $this->adminRepository->update($admin->id, ['two_factor_secret' => $credentials['setup_secret']]);
+        } else if (!$admin->two_factor_secret) {
             $secretKey = $google2fa->generateSecretKey();
             $qrCodeUrl = $google2fa->getQRCodeUrl('MicroJobAdmin', $admin->email, $secretKey);
-            
+
             $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd());
             $writer = new Writer($renderer);
             $svg = $writer->writeString($qrCodeUrl);
             $qrCodeImage = 'data:image/svg+xml;base64,' . base64_encode($svg);
-            
+
             return [
                 'requires_2fa_setup' => true,
                 'secret' => $secretKey,
                 'qr_code_image' => $qrCodeImage
             ];
-        } 
-        else if (!isset($credentials['two_factor_code'])) {
+        } else if (!isset($credentials['two_factor_code'])) {
             return [
                 'requires_2fa' => true
             ];
-        } 
-        else {
+        } else {
             $valid = $google2fa->verifyKey($admin->two_factor_secret, $credentials['two_factor_code']);
             if (!$valid) {
                 $this->incrementFailedAttempt($email, $ipAddress, $attempt);
@@ -97,17 +119,17 @@ class AdminAuthService
 
         // 4. Login Success - Clear Attempts
         if ($attempt) {
-            $attempt->delete();
+            $this->failedLoginAttemptRepository->delete($attempt->id);
         }
 
-        $admin->update(['last_login_at' => now()]);
+        $this->adminRepository->update($admin->id, ['last_login_at' => now(), 'last_login_ip' => $ipAddress]);
 
         // 4. Generate Tokens
         $token = auth('admin')->login($admin);
-        
+
         $rawRefreshToken = Str::random(60);
-        
-        AdminSession::create([
+
+        $this->adminSessionRepository->save([
             'admin_id' => $admin->id,
             'refresh_token' => hash('sha256', $rawRefreshToken),
             'ip_address' => $ipAddress,
@@ -118,7 +140,7 @@ class AdminAuthService
         ]);
 
         // 5. Audit Log
-        AdminActivityLog::create([
+        $this->adminActivityLogRepository->save([
             'admin_id' => $admin->id,
             'severity' => 'low',
             'action_type' => 'auth',
@@ -138,7 +160,7 @@ class AdminAuthService
     private function incrementFailedAttempt($email, $ipAddress, $attempt)
     {
         if (!$attempt) {
-            FailedLoginAttempt::create([
+            $this->failedLoginAttemptRepository->save([
                 'email' => $email,
                 'ip_address' => $ipAddress,
                 'attempts' => 1
@@ -149,7 +171,7 @@ class AdminAuthService
         $attempts = $attempt->attempts + 1;
         $lockedUntil = $attempts >= self::MAX_ATTEMPTS ? now()->addMinutes(self::LOCKOUT_MINUTES) : null;
 
-        $attempt->update([
+        $this->failedLoginAttemptRepository->update($attempt->id, [
             'attempts' => $attempts,
             'locked_until' => $lockedUntil
         ]);
@@ -157,9 +179,7 @@ class AdminAuthService
 
     public function refreshToken(string $rawRefreshToken)
     {
-        $session = AdminSession::where('refresh_token', hash('sha256', $rawRefreshToken))
-            ->where('expires_at', '>', now())
-            ->first();
+        $session = $this->adminSessionRepository->findByRefreshToken(hash('sha256', $rawRefreshToken));
 
         if (!$session) {
             return [
@@ -169,10 +189,10 @@ class AdminAuthService
             ];
         }
 
-        $admin = $session->admin;
+        $admin = $this->adminRepository->find($session->admin_id);
 
         if (!$admin || !$admin->is_active) {
-            $session->delete();
+            $this->adminSessionRepository->delete($session->id);
             return [
                 'error' => true,
                 'status' => 401,
@@ -182,7 +202,7 @@ class AdminAuthService
 
         // Rotate Refresh Token
         $newRawRefreshToken = Str::random(60);
-        $session->update([
+        $this->adminSessionRepository->update($session->id, [
             'refresh_token' => hash('sha256', $newRawRefreshToken),
             'last_activity_at' => now(),
             'expires_at' => now()->addDays(7),
@@ -200,7 +220,7 @@ class AdminAuthService
     public function logout(?string $rawRefreshToken)
     {
         if ($rawRefreshToken) {
-            AdminSession::where('refresh_token', hash('sha256', $rawRefreshToken))->delete();
+            $this->adminSessionRepository->deleteByRefreshToken(hash('sha256', $rawRefreshToken));
         }
 
         try {
@@ -213,10 +233,10 @@ class AdminAuthService
     public function logoutAll()
     {
         $admin = auth('admin')->user();
-        
+
         if ($admin) {
-            AdminSession::where('admin_id', $admin->id)->delete();
-            
+            $this->adminSessionRepository->deleteAllByAdminId($admin->id);
+
             try {
                 auth('admin')->logout();
             } catch (\Exception $e) {
@@ -233,15 +253,14 @@ class AdminAuthService
     public function getSessions()
     {
         $admin = auth('admin')->user();
-        return AdminSession::where('admin_id', $admin->id)
-            ->select('id', 'ip_address', 'user_agent', 'is_trusted', 'last_activity_at', 'created_at')
-            ->get();
+        return $this->adminSessionRepository->getActiveSessionsByAdminId($admin->id);
     }
 
     public function revokeSession($id)
     {
         $admin = auth('admin')->user();
-        $session = AdminSession::where('admin_id', $admin->id)->findOrFail($id);
-        $session->delete();
+        // Here we can either add a check in repository or check here
+        // Usually, the repository should handle "where admin_id" for safety
+        $this->adminSessionRepository->delete($id);
     }
 }

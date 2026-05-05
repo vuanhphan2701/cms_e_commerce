@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Auth\Events\Registered;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Exception;
 
 class AuthService
 {
@@ -76,7 +77,6 @@ class AuthService
 
         // --- Find User ---
         $user = $this->userRepository->findByEmail($credentials['email']);
-
         if (!$user) {
             RateLimiter::hit($throttleKey, 60);
             return [
@@ -88,7 +88,7 @@ class AuthService
 
         // --- Account Lock Check ---
         if ($user->isLocked()) {
-            $minutesLeft = now()->diffInMinutes($user->locked_until) + 1;
+            $minutesLeft = (int) ceil(now()->diffInSeconds($user->locked_until) / 60);
             return [
                 'error' => true,
                 'type' => 'account_locked',
@@ -137,39 +137,68 @@ class AuthService
     /**
      * Send email verification notification.
      */
+    public function verifyOtp(string $email, string $otp)
+    {
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!$user) {
+            throw new Exception('Người dùng không tồn tại.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return ['message' => 'Email đã được xác thực trước đó.', 'user' => $user];
+        }
+
+        if (!$user->verifyEmailOtp($otp)) {
+            throw new Exception('Mã xác thực không hợp lệ hoặc đã hết hạn.');
+        }
+
+        $user->markEmailAsVerified();
+        $user->clearEmailOtp();
+
+        $token = auth('api')->login($user);
+
+        return [
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
+            'user' => $user,
+        ];
+    }
+
+    public function sendVerificationEmailByEmail(string $email)
+    {
+        $user = $this->userRepository->findByEmail($email);
+        if (!$user) {
+            throw new Exception('Người dùng không tồn tại.');
+        }
+        return $this->sendVerificationEmail($user);
+    }
+
     public function sendVerificationEmail($user)
     {
         if ($user->hasVerifiedEmail()) {
             return ['message' => 'Email đã được xác thực.'];
         }
 
-        // Generate a new OTP
         $user->generateEmailOtp();
-
         $user->sendEmailVerificationNotification();
         return ['message' => 'Mã xác thực mới đã được gửi đến email của bạn.'];
     }
 
-    /**
-     * Send password reset link.
-     */
     public function sendPasswordResetLink(string $email)
     {
         $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
-            // Don't reveal if user exists — security best practice
             return ['message' => 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được liên kết đặt lại mật khẩu.'];
         }
 
-        $status = \Illuminate\Support\Facades\Password::sendResetLink(['email' => $email]);
+        \Illuminate\Support\Facades\Password::sendResetLink(['email' => $email]);
 
         return ['message' => 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được liên kết đặt lại mật khẩu.'];
     }
 
-    /**
-     * Reset password using token.
-     */
     public function resetPassword(array $data)
     {
         $status = \Illuminate\Support\Facades\Password::reset(
@@ -184,7 +213,6 @@ class AuthService
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
                 ]);
-                // Unlock account after successful password reset
                 $user->resetFailedAttempts();
             }
         );
@@ -196,33 +224,21 @@ class AuthService
         return ['success' => false, 'message' => 'Không thể đặt lại mật khẩu. Token không hợp lệ hoặc đã hết hạn.'];
     }
 
-    /**
-     * Refresh the current token.
-     */
     public function refresh()
     {
         return $this->respondWithToken(auth('api')->refresh());
     }
 
-    /**
-     * Log the user out (Invalidate the token).
-     */
     public function logout()
     {
         auth('api')->logout();
     }
 
-    /**
-     * Get the authenticated User.
-     */
     public function me()
     {
         return auth('api')->user();
     }
 
-    /**
-     * Get the token array structure.
-     */
     protected function respondWithToken($token, $user = null)
     {
         return [
@@ -233,9 +249,6 @@ class AuthService
         ];
     }
 
-    /**
-     * Generate a throttle key for rate limiting (email + IP).
-     */
     protected function throttleKey(string $email, string $ip): string
     {
         return Str::transliterate(Str::lower($email) . '|' . $ip);
