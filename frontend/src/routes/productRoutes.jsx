@@ -1,8 +1,7 @@
 // src/routes/productRoutes.jsx
 import { Route } from "react-router-dom";
-import Products from "../pages/Products";
-import Create from "../pages/ProductsCreate";
-import Detail from "../pages/Detail";
+import Products from "../pages/product/Products";
+import Create from "../pages/product/ProductsCreate";
 import Dashboard from "../pages/Dashboard";
 
 export const productRoutes = (
@@ -10,6 +9,5 @@ export const productRoutes = (
     <Route path="/" element={<Dashboard />} />
     <Route path="/product" element={<Products />} />
     <Route path="/product/create" element={<Create />} />
-    <Route path="/product/:id" element={<Detail />} />
   </>
 );

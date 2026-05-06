@@ -2,6 +2,7 @@
 namespace Core;
 class Response
 {
+
     public static function success($data, $message = 'Success', $code = 200)
     {
         return response()->json([

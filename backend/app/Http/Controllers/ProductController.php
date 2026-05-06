@@ -25,7 +25,7 @@ class ProductController extends BaseController
     protected ProductRepository $productRepository;
 
     /**
-     * The validator class associated with the controller
+     * string validator = App\Validators\ProductValidator;
      */
     protected string $validator = ProductValidator::class;
 
@@ -65,7 +65,6 @@ class ProductController extends BaseController
         if ($request->has('include')) {
             $include = explode(',', $request->include);
         }
-
         $result = $this->productRepository->paginate(
             $page,
             $limit,
@@ -74,7 +73,6 @@ class ProductController extends BaseController
             $filters,
             $include
         );
-
         return Response::success($result);
     }
 
@@ -99,11 +97,12 @@ class ProductController extends BaseController
     /**
      * Create a new product.
      */
-    public function store()
+    public function store(Request $request)
     {
         // Validate input data
-        $validated = $this->validate('validateCreate');
+        $this->validate('validateCreate');
 
+        $validated = $request->all();
         // dd($validated);
         $product = $this->productRepository->save($validated);
 
