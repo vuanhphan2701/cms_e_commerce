@@ -46,6 +46,5 @@ class AppServiceProvider extends ServiceProvider
             // Adds a deleted_at column (used with SoftDeletes trait)
             $this->softDeletes();
         });
-
     }
 }

@@ -1,14 +1,6 @@
 // categoryApi.js
 import api from "./axios";
 
-export async function getAllCategories(options = {}) {
-  const res = await api.get("category", { params: options });
-  return {
-    items: res.data.data.data,
-    meta: res.data.data.meta || res.data.data,
-  };
-}
-
 // Lấy tất cả categories
 export async function getCategories() {
   const res = await api.get("category");
