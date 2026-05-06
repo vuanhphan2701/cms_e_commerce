@@ -3,26 +3,27 @@ import { useState, useEffect } from "react";
 // import navigation hook
 import { useNavigate } from "react-router-dom";
 // import custom hook to load products
-import { useProducts } from "../../hooks/useProducts";
-import { deleteProduct } from "../../api/productApi";
-import { updateProduct } from "../../api/productApi";
+import { useProducts } from "../hooks/useProducts";
+import { deleteProduct } from "../api/productApi";
+import { updateProduct } from "../api/productApi";
 // import Layout component
-import Layout from "../../components/layout/Layout";
+import Layout from "../components/layout/Layout";
 // import ProductTable component
-import ProductTable from "../../components/products/ProductTable";
+import ProductTable from "../components/products/ProductTable";
+// import ProductForm component
+import ProductForm from "../components/products/ProductForm";
 // import alert context
-import { useAlert } from "../../components/common/AlertContext";
+import { useAlert } from "../components/common/AlertContext";
 // import APIs to load brands, categories, suppliers
-import { getBrands } from "../../api/brandApi";
-import { getCategories } from "../../api/categoryApi";
-import { getSuppliers } from "../../api/supplierApi";
+import { getBrands } from "../api/brandApi";
+import { getCategories } from "../api/categoryApi";
+import { getSuppliers } from "../api/supplierApi";
 // import ProductFilters component
-import ProductFilters from "../../components/products/ProductFilter";
+import ProductFilters from "../components/products/ProductFilter";
 // import ProductEditModal component
-import ProductEditModal from "../../components/products/ProductEditModal";
+import ProductEditModal from "../components/products/ProductEditModal";
 // import ProductReviewModal component
-import ProductReviewsModal from "../../components/products/ProductReviewsModal";
-
+import ProductReviewsModal from "../components/products/ProductReviewsModal";
 
 const Products = () => {
   // alert context
@@ -255,16 +256,16 @@ const Products = () => {
               );
 
               setEditForm(updatedProduct);
-
-              // remove incorrect hook call (hook only works in component render, not in event handler)
+              setShowEditModal(false);
               showAlert("Product updated successfully!", "success");
 
             } catch (err) {
-              let errorMessage = err.response?.data?.message || err.message || "Error";
-              if (Array.isArray(errorMessage)) {
-                errorMessage = errorMessage.join("; ");
+              if (err.message === "CONFLICT") {
+                showAlert("❗ Data conflict: someone updated this product.", "error");
+                return;
               }
-              showAlert("Update failed!", errorMessage);
+
+              showAlert("Update failed!", "error");
             }
           }}
         />)}
