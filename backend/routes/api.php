@@ -40,5 +40,15 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/sessions', [AdminAuthController::class, 'getSessions']);
         Route::delete('/sessions/{id}', [AdminAuthController::class, 'revokeSession']);
+
+        // User Management
+        Route::prefix('users')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\AdminUserController::class, 'index']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\AdminUserController::class, 'show']);
+            Route::post('/{id}/status', [\App\Http\Controllers\Api\AdminUserController::class, 'updateStatus']);
+            Route::post('/{id}/verify-kyc', [\App\Http\Controllers\Api\AdminUserController::class, 'verifyKYC']);
+            Route::post('/{id}/reset-password', [\App\Http\Controllers\Api\AdminUserController::class, 'resetPassword']);
+            Route::get('/{id}/activity', [\App\Http\Controllers\Api\AdminUserController::class, 'getActivityLogs']);
+        });
     });
 });

@@ -52,109 +52,25 @@ class AdminAuthService
         $email = $credentials['email'];
 
         // 1. Check Rate Limiting
-        $attempt = $this->failedLoginAttemptRepository->findByEmailAndIp($email, $ipAddress);
-
-        if ($attempt && $attempt->locked_until && $attempt->locked_until > now()) {
-            return [
-                'error' => true,
-                'status' => 429,
-                'message' => 'Tài khoản tạm thời bị khóa do đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.'
-            ];
+        $attempt = $this->checkRateLimit($email, $ipAddress);
+        if (is_array($attempt) && isset($attempt['error'])) {
+            return $attempt;
         }
 
         // 2. Validate Credentials
-        $admin = $this->adminRepository->findByEmail($email);
-
-        if (!$admin || !Hash::check($credentials['password'], $admin->password_hash)) {
-            $this->incrementFailedAttempt($email, $ipAddress, $attempt);
-            return [
-                'error' => true,
-                'status' => 401,
-                'message' => 'Thông tin đăng nhập không chính xác.'
-            ];
+        $admin = $this->validateCredentials($email, $credentials['password'], $ipAddress, $attempt);
+        if (is_array($admin) && isset($admin['error'])) {
+            return $admin;
         }
 
-        if (!$admin->is_active) {
-            return [
-                'error' => true,
-                'status' => 403,
-                'message' => 'Tài khoản đã bị vô hiệu hóa.'
-            ];
+        // 3. Handle 2FA
+        $twoFactorResult = $this->verifyTwoFactor($admin, $credentials, $ipAddress, $attempt);
+        if ($twoFactorResult) {
+            return $twoFactorResult;
         }
 
-        // 3. 2FA Check
-        $google2fa = new Google2FA();
-
-        if (isset($credentials['setup_secret']) && isset($credentials['two_factor_code'])) {
-            $valid = $google2fa->verifyKey($credentials['setup_secret'], $credentials['two_factor_code']);
-            if (!$valid) {
-                return ['error' => true, 'status' => 401, 'message' => 'Mã xác thực 2FA không chính xác.'];
-            }
-            $this->adminRepository->update($admin->id, ['two_factor_secret' => $credentials['setup_secret']]);
-        } else if (!$admin->two_factor_secret) {
-            $secretKey = $google2fa->generateSecretKey();
-            $qrCodeUrl = $google2fa->getQRCodeUrl('MicroJobAdmin', $admin->email, $secretKey);
-
-            $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd());
-            $writer = new Writer($renderer);
-            $svg = $writer->writeString($qrCodeUrl);
-            $qrCodeImage = 'data:image/svg+xml;base64,' . base64_encode($svg);
-
-            return [
-                'requires_2fa_setup' => true,
-                'secret' => $secretKey,
-                'qr_code_image' => $qrCodeImage
-            ];
-        } else if (!isset($credentials['two_factor_code'])) {
-            return [
-                'requires_2fa' => true
-            ];
-        } else {
-            $valid = $google2fa->verifyKey($admin->two_factor_secret, $credentials['two_factor_code']);
-            if (!$valid) {
-                $this->incrementFailedAttempt($email, $ipAddress, $attempt);
-                return ['error' => true, 'status' => 401, 'message' => 'Mã xác thực 2FA không chính xác.'];
-            }
-        }
-
-        // 4. Login Success - Clear Attempts
-        if ($attempt) {
-            $this->failedLoginAttemptRepository->delete($attempt->id);
-        }
-
-        $this->adminRepository->update($admin->id, ['last_login_at' => now(), 'last_login_ip' => $ipAddress]);
-
-        // 4. Generate Tokens
-        $token = auth('admin')->login($admin);
-
-        $rawRefreshToken = Str::random(60);
-
-        $this->adminSessionRepository->save([
-            'admin_id' => $admin->id,
-            'refresh_token' => hash('sha256', $rawRefreshToken),
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-            'is_trusted' => true,
-            'last_activity_at' => now(),
-            'expires_at' => now()->addDays(7),
-        ]);
-
-        // 5. Audit Log
-        $this->adminActivityLogRepository->save([
-            'admin_id' => $admin->id,
-            'severity' => 'low',
-            'action_type' => 'auth',
-            'action' => 'Admin logged in',
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-        ]);
-
-        return [
-            'success' => true,
-            'token' => $token,
-            'refresh_token' => $rawRefreshToken,
-            'admin' => $admin
-        ];
+        // 4. Finalize Login
+        return $this->finalizeLogin($admin, $ipAddress, $userAgent, $attempt);
     }
 
     private function incrementFailedAttempt($email, $ipAddress, $attempt)
@@ -175,6 +91,152 @@ class AdminAuthService
             'attempts' => $attempts,
             'locked_until' => $lockedUntil
         ]);
+    }
+
+    /**
+     * Checks if the user is currently rate-limited.
+     */
+    private function checkRateLimit(string $email, string $ipAddress)
+    {
+        $attempt = $this->failedLoginAttemptRepository->findByEmailAndIp($email, $ipAddress);
+
+        if ($attempt && $attempt->locked_until && $attempt->locked_until > now()) {
+            return [
+                'error' => true,
+                'status' => 429,
+                'message' => 'Tài khoản tạm thời bị khóa do đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.'
+            ];
+        }
+
+        return $attempt;
+    }
+
+    /**
+     * Validates user credentials and account status.
+     */
+    private function validateCredentials(string $email, string $password, string $ipAddress, $attempt)
+    {
+        $admin = $this->adminRepository->findByEmail($email);
+
+        if (!$admin || !Hash::check($password, $admin->password_hash)) {
+            $this->incrementFailedAttempt($email, $ipAddress, $attempt);
+            return [
+                'error' => true,
+                'status' => 401,
+                'message' => 'Thông tin đăng nhập không chính xác.'
+            ];
+        }
+
+        if (!$admin->is_active) {
+            return [
+                'error' => true,
+                'status' => 403,
+                'message' => 'Tài khoản đã bị vô hiệu hóa.'
+            ];
+        }
+
+        return $admin;
+    }
+
+    /**
+     * Finalizes the login process after successful authentication and 2FA.
+     */
+    private function finalizeLogin($admin, string $ipAddress, ?string $userAgent, $attempt): array
+    {
+        // 1. Clear failed attempts
+        if ($attempt) {
+            $this->failedLoginAttemptRepository->delete($attempt->id);
+        }
+
+        // 2. Update admin info
+        $this->adminRepository->update($admin->id, [
+            'last_login_at' => now(),
+            'last_login_ip' => $ipAddress
+        ]);
+
+        // 3. Generate Auth Tokens
+        $token = auth('admin')->login($admin);
+        $rawRefreshToken = Str::random(60);
+
+        // 4. Create Session Record
+        $this->adminSessionRepository->save([
+            'admin_id' => $admin->id,
+            'refresh_token' => hash('sha256', $rawRefreshToken),
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'is_trusted' => true,
+            'last_activity_at' => now(),
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        // 5. Create Audit Log
+        $this->adminActivityLogRepository->save([
+            'admin_id' => $admin->id,
+            'severity' => 'low',
+            'action_type' => 'auth',
+            'action' => 'Admin logged in',
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+        ]);
+
+        return [
+            'success' => true,
+            'token' => $token,
+            'refresh_token' => $rawRefreshToken,
+            'admin' => $admin
+        ];
+    }
+
+    /**
+     * Handles the Two-Factor Authentication flow.
+     * Returns an array if a response (error or challenge) is required, otherwise null.
+     */
+    private function verifyTwoFactor($admin, array $credentials, string $ipAddress, $attempt): ?array
+    {
+        $google2fa = new Google2FA();
+
+        // Case 1: Initial 2FA setup completion
+        if (isset($credentials['setup_secret']) && isset($credentials['two_factor_code'])) {
+            $valid = $google2fa->verifyKey($credentials['setup_secret'], $credentials['two_factor_code']);
+            if (!$valid) {
+                return ['error' => true, 'status' => 401, 'message' => 'Mã xác thực 2FA không chính xác.'];
+            }
+            $this->adminRepository->update($admin->id, ['two_factor_secret' => $credentials['setup_secret']]);
+            return null;
+        }
+
+        // Case 2: User hasn't set up 2FA yet - generate and return QR code
+        if (!$admin->two_factor_secret) {
+            $secretKey = $google2fa->generateSecretKey();
+            $qrCodeUrl = $google2fa->getQRCodeUrl('MicroJobAdmin', $admin->email, $secretKey);
+
+            $renderer = new ImageRenderer(new RendererStyle(200), new SvgImageBackEnd());
+            $writer = new Writer($renderer);
+            $svg = $writer->writeString($qrCodeUrl);
+            $qrCodeImage = 'data:image/svg+xml;base64,' . base64_encode($svg);
+
+            return [
+                'requires_2fa_setup' => true,
+                'secret' => $secretKey,
+                'qr_code_image' => $qrCodeImage
+            ];
+        }
+
+        // Case 3: 2FA is set up but code is missing from request
+        if (!isset($credentials['two_factor_code'])) {
+            return [
+                'requires_2fa' => true
+            ];
+        }
+
+        // Case 4: Verify the provided 2FA code
+        $valid = $google2fa->verifyKey($admin->two_factor_secret, $credentials['two_factor_code']);
+        if (!$valid) {
+            $this->incrementFailedAttempt($admin->email, $ipAddress, $attempt);
+            return ['error' => true, 'status' => 401, 'message' => 'Mã xác thực 2FA không chính xác.'];
+        }
+
+        return null;
     }
 
     public function refreshToken(string $rawRefreshToken)

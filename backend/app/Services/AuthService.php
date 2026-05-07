@@ -14,19 +14,8 @@ class AuthService
 {
     protected UserRepository $userRepository;
 
-    /**
-     * Maximum failed login attempts before account lock.
-     */
     const MAX_ATTEMPTS = 5;
-
-    /**
-     * Account lock duration in minutes.
-     */
     const LOCK_MINUTES = 30;
-
-    /**
-     * Rate limit: max login requests per minute (per IP+email).
-     */
     const RATE_LIMIT_PER_MINUTE = 5;
 
     public function __construct(UserRepository $userRepository)
@@ -34,9 +23,6 @@ class AuthService
         $this->userRepository = $userRepository;
     }
 
-    /**
-     * Register a new user, fire Registered event for email verification.
-     */
     public function register(array $data)
     {
         $user = $this->userRepository->save([
@@ -45,10 +31,10 @@ class AuthService
             'password' => Hash::make($data['password']),
         ]);
 
-        // Generate OTP before sending email
-        $user->generateEmailOtp();
+        // Generate OTP via Repository
+        $this->userRepository->generateEmailOtp($user->id);
 
-        // Fire event so Laravel sends the verification email
+        // Fire event
         event(new Registered($user));
 
         return [
@@ -57,14 +43,10 @@ class AuthService
         ];
     }
 
-    /**
-     * Authenticate user with rate limiting + account lock + email verification check.
-     */
     public function login(array $credentials, string $ip)
     {
         $throttleKey = $this->throttleKey($credentials['email'], $ip);
 
-        // --- Rate Limit Check ---
         if (RateLimiter::tooManyAttempts($throttleKey, self::RATE_LIMIT_PER_MINUTE)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             return [
@@ -75,7 +57,6 @@ class AuthService
             ];
         }
 
-        // --- Find User ---
         $user = $this->userRepository->findByEmail($credentials['email']);
         if (!$user) {
             RateLimiter::hit($throttleKey, 60);
@@ -86,7 +67,6 @@ class AuthService
             ];
         }
 
-        // --- Account Lock Check ---
         if ($user->isLocked()) {
             $minutesLeft = (int) ceil(now()->diffInSeconds($user->locked_until) / 60);
             return [
@@ -96,15 +76,17 @@ class AuthService
             ];
         }
 
-        // --- Attempt Login ---
         if (!$token = auth('api')->attempt($credentials)) {
             RateLimiter::hit($throttleKey, 60);
-            $user->incrementFailedAttempts(self::MAX_ATTEMPTS, self::LOCK_MINUTES);
+            
+            // Mutation via Repository
+            $this->userRepository->incrementFailedAttempts($user->id, self::MAX_ATTEMPTS, self::LOCK_MINUTES);
 
-            $attemptsLeft = self::MAX_ATTEMPTS - $user->fresh()->failed_login_attempts;
+            $user = $user->fresh();
+            $attemptsLeft = self::MAX_ATTEMPTS - $user->failed_login_attempts;
             $message = 'Thông tin đăng nhập không chính xác.';
 
-            if ($user->fresh()->isLocked()) {
+            if ($user->isLocked()) {
                 $message = "Tài khoản đã bị khóa do quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau " . self::LOCK_MINUTES . " phút.";
             } elseif ($attemptsLeft <= 2 && $attemptsLeft > 0) {
                 $message .= " Còn {$attemptsLeft} lần thử trước khi tài khoản bị khóa.";
@@ -117,7 +99,6 @@ class AuthService
             ];
         }
 
-        // --- Email Verification Check ---
         if (!$user->hasVerifiedEmail()) {
             auth('api')->logout();
             return [
@@ -127,16 +108,14 @@ class AuthService
             ];
         }
 
-        // --- Success: clear rate limiter + reset failed attempts ---
         RateLimiter::clear($throttleKey);
-        $user->resetFailedAttempts();
+        
+        // Mutation via Repository
+        $this->userRepository->resetFailedAttempts($user->id);
 
         return $this->respondWithToken($token);
     }
 
-    /**
-     * Send email verification notification.
-     */
     public function verifyOtp(string $email, string $otp)
     {
         $user = $this->userRepository->findByEmail($email);
@@ -153,8 +132,9 @@ class AuthService
             throw new Exception('Mã xác thực không hợp lệ hoặc đã hết hạn.');
         }
 
-        $user->markEmailAsVerified();
-        $user->clearEmailOtp();
+        // Mutation via Repository
+        $this->userRepository->markEmailAsVerified($user->id);
+        $this->userRepository->clearEmailOtp($user->id);
 
         $token = auth('api')->login($user);
 
@@ -162,7 +142,7 @@ class AuthService
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
-            'user' => $user,
+            'user' => $user->fresh(),
         ];
     }
 
@@ -181,7 +161,9 @@ class AuthService
             return ['message' => 'Email đã được xác thực.'];
         }
 
-        $user->generateEmailOtp();
+        // Mutation via Repository
+        $this->userRepository->generateEmailOtp($user->id);
+        
         $user->sendEmailVerificationNotification();
         return ['message' => 'Mã xác thực mới đã được gửi đến email của bạn.'];
     }
@@ -209,11 +191,12 @@ class AuthService
                 'token' => $data['token'],
             ],
             function ($user, $password) {
-                $user->update([
+                // Mutation via Repository
+                $this->userRepository->update($user->id, [
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
                 ]);
-                $user->resetFailedAttempts();
+                $this->userRepository->resetFailedAttempts($user->id);
             }
         );
 

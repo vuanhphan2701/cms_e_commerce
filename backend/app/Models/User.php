@@ -16,8 +16,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
      */
     public function getJWTIdentifier()
     {
@@ -26,23 +24,36 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     /**
      * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
      */
     public function getJWTCustomClaims()
     {
-        return [];
+        return [
+            'role' => $this->role,
+            'status' => $this->status
+        ];
     }
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var list<string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'status',
+        'phone',
+        'city',
+        'province',
+        'rating',
+        'is_verified',
+        'identity_card_number',
+        'identity_card_front',
+        'identity_card_back',
+        'zalo_id',
+        'rejection_reason',
+        'banned_at',
+        'suspended_until',
         'failed_login_attempts',
         'locked_until',
         'email_verification_otp',
@@ -51,8 +62,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     /**
      * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -64,8 +73,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     /**
      * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -73,12 +80,16 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'locked_until' => 'datetime',
+            'banned_at' => 'datetime',
+            'suspended_until' => 'datetime',
             'email_verification_otp_expires_at' => 'datetime',
+            'is_verified' => 'boolean',
+            'rating' => 'float',
         ];
     }
 
     /**
-     * Check if the account is currently locked.
+     * Check if the account is currently locked due to failed logins.
      */
     public function isLocked(): bool
     {
@@ -86,56 +97,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     }
 
     /**
-     * Lock the account for a given number of minutes.
-     */
-    public function lockAccount(int $minutes = 30): void
-    {
-        $this->update([
-            'locked_until' => now()->addMinutes($minutes),
-        ]);
-    }
-
-    /**
-     * Increment failed login attempts. Lock if threshold is reached.
-     */
-    public function incrementFailedAttempts(int $maxAttempts = 5, int $lockMinutes = 30): void
-    {
-        $this->increment('failed_login_attempts');
-
-        if ($this->failed_login_attempts >= $maxAttempts) {
-            $this->lockAccount($lockMinutes);
-        }
-    }
-
-    /**
-     * Reset failed login attempts on successful login.
-     */
-    public function resetFailedAttempts(): void
-    {
-        $this->update([
-            'failed_login_attempts' => 0,
-            'locked_until' => null,
-        ]);
-    }
-
-    /**
-     * Generate a new 6-digit OTP for email verification.
-     */
-    public function generateEmailOtp(int $expiresInMinutes = 15): string
-    {
-        // Generate a 6 digit random number
-        $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-
-        $this->update([
-            'email_verification_otp' => $otp,
-            'email_verification_otp_expires_at' => now()->addMinutes($expiresInMinutes),
-        ]);
-
-        return $otp;
-    }
-
-    /**
-     * Verify the provided OTP.
+     * Verify the provided OTP. (Pure logic check)
      */
     public function verifyEmailOtp(string $otp): bool
     {
@@ -155,17 +117,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     }
 
     /**
-     * Clear OTP data.
-     */
-    public function clearEmailOtp(): void
-    {
-        $this->update([
-            'email_verification_otp' => null,
-            'email_verification_otp_expires_at' => null,
-        ]);
-    }
-
-    /**
      * Override: send custom email verification notification.
      */
     public function sendEmailVerificationNotification()
@@ -175,7 +126,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     /**
      * Override: send custom password reset notification.
-     * Points reset link to the frontend app instead of the backend.
      */
     public function sendPasswordResetNotification($token)
     {

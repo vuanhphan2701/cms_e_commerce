@@ -15,7 +15,26 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'jwt.auth' => \App\Http\Middleware\JwtMiddleware::class,
         ]);
+
+        $middleware->redirectTo(
+            function ($request) {
+                if ($request->is('api/*')) {
+                    return null; // Don't redirect for API
+                }
+                // return route('login'); // This would still error if login not defined
+                return '/login'; 
+            }
+        );
+
     })
+
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(function ($request, $e) {
+            if ($request->is('api/*')) {
+                return true;
+            }
+
+            return $request->expectsJson();
+        });
     })->create();
+
