@@ -7,7 +7,11 @@ const api = axios.create({
 // Request interceptor: attach token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // Check if the request is for admin or user
+    const isAdminRequest = config.url?.includes('/admin/');
+    const tokenKey = isAdminRequest ? "adminToken" : "token";
+    const token = localStorage.getItem(tokenKey);
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,10 +28,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip token refresh for auth endpoints (login, register, etc.)
-    // These endpoints handle their own errors in the UI components
+    // Determine if it's an admin request
+    const isAdminRequest = originalRequest.url?.includes('/admin/');
+    const tokenKey = isAdminRequest ? "adminToken" : "token";
+    const loginPath = isAdminRequest ? "/admin/login" : "/login";
+    const refreshPath = isAdminRequest ? "admin/refresh-token" : "auth/refresh";
+
+    // Skip token refresh for auth endpoints
     const isAuthEndpoint = originalRequest.url?.match(
-      /auth\/(login|register|forgot-password|reset-password)/
+      /(auth|admin)\/(login|register|forgot-password|reset-password|refresh-token)/
     );
 
     // If 401, not already retrying, and NOT an auth endpoint
@@ -40,24 +49,29 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          'http://ecommerce.test/cms/backend/public/api/auth/refresh',
+          `http://ecommerce.test/cms/backend/public/api/${refreshPath}`,
           {},
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
+              Authorization: `Bearer ${localStorage.getItem(tokenKey)}`
+            },
+            withCredentials: true // Important for cookies
           }
         );
 
         const newToken = res.data.data.access_token;
-        localStorage.setItem("token", newToken);
+        localStorage.setItem(tokenKey, newToken);
 
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, logout
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        // If refresh fails, logout and redirect to correct login page
+        localStorage.removeItem(tokenKey);
+        
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes(loginPath)) {
+          window.location.href = loginPath;
+        }
         return Promise.reject(refreshError);
       }
     }
